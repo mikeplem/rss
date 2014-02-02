@@ -219,6 +219,15 @@ get '/edit_feeds' => sub {
 	$self->render('edit_feeds');
 };
 
+# setup base route - DONE
+get '/maint_feeds' => sub {
+	my $self = shift;
+	
+	my $rows = $self->edit_feed_list;
+	$self->stash( edit_rows => $rows );
+	$self->render('maint');
+};
+
 
 # add feeds to the database - DONE
 post '/add_feeds' => sub {
