@@ -238,7 +238,9 @@ post '/add_feeds' => sub {
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
     $insert_feed->finish;
-    $self->render('feeds_added');
+    
+    return $self->render(text => 'done', status => 200);
+    #$self->render('feeds_added');
 };
 
 # update the news feed with the state chosen by
@@ -280,7 +282,8 @@ post '/update_feed' => sub {
     $update->execute($feed_url, $feed_id);
     $update->finish;
     
-    $self->render('edit_feeds');
+    #$self->render('edit_feeds');
+    return $self->render(text => 'done', status => 200);
     
 };
 
@@ -297,18 +300,20 @@ post '/delete_feed' => sub {
     $delete_news->execute($feed_id);
     $delete_news->finish;
     
-    $self->render('edit_feeds');
+    #$self->render('edit_feeds');
+    return $self->render(text => 'done', status => 200);
 };
 
 # clean up the database
 get '/cleanup' => sub {
     my $self = shift;
     my $days_back = $self->param('days_back');
-    $days_back = 30;
 
-    # SELECT current_date -> 2013-10-21
-    my $get_prev_date = $dbh->prepare("select date('now',?)");
-    $get_prev_date->execute("-$days_back day");
+    # the user will provide a number of days to delete older than the current date
+    # this SQL statement will find that actual date to use in the delete statement
+    # below
+    my $get_prev_date = $dbh->prepare("select current_date - interval '? day'");
+    $get_prev_date->execute($days_back );
     my @date_to_remove_arr = $get_prev_date->fetchrow_array();
 
     my $remove_date = $date_to_remove_arr[0];
@@ -318,8 +323,8 @@ get '/cleanup' => sub {
     $remove_old_news->execute($remove_date);
     $remove_old_news->finish;
     
-    $self->redirect_to('/');
-    
+    # $self->redirect_to('/');
+    return $self->render(text => 'done', status => 200);
 };
 
 # add news into the database
@@ -987,13 +992,17 @@ a:visited { color:white }
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         
                         if ( state == 'add' ) {
-                            document.getElementById('feedAdd').value = 'Feed Added';
+                            document.getElementById('feedAdd').innerHTML = 'Feed Added';
+                            window.location.reload(true);
                         } else if ( state == 'clean' ) {
-                            document.getElementById('cleanUp').value = 'Cleared';
+                            document.getElementById('cleanUp').innerHTML = 'Cleared';
+                            document.getElementById('days_back').value = ''
                         } else if ( state == 'update' ) {
-                            document.getElementById('feedChange').value = 'Feed Updated';
+                            document.getElementById('feedChange').innerHTML = 'Feed Updated';
+                            window.location.reload(true);
                         } else if ( state == 'delete' ) {
-                            document.getElementById('feedChange').value = 'Feed Deleted';
+                            document.getElementById('feedChange').innerHTML = 'Feed Deleted';
+                            window.location.reload(true);
                         } else {
                             alert('Incorrect state provided');
                         }
@@ -1002,30 +1011,36 @@ a:visited { color:white }
                 
                 if ( state == 'add' ) {
                     
-                    //xmlhttp.open("GET","/update_feeds?feed_name=" + name + "&feed_url=" + url, true);
-                    //xmlhttp.send();
                     name = document.getElementById('add_feed_name').value;
                     url = document.getElementById('add_feed_url').value;
-                    alert('name=' + name + ' and url=' + url);
+                    
+                    xmlhttp.open("GET","/add_feeds?feed_name=" + name + "&feed_url=" + url, true);
+                    xmlhttp.send();
+                    
+                    //alert('name=' + name + ' and url=' + url);
                     
                 } else if ( state == 'clean' ) {
                     
-                    //xmlhttp.open("GET","/cleanup?days_back=" + number, true);
-                    //xmlhttp.send();
                     number = document.getElementById('days_back').value;
-                    alert('number=' + number);
+                    
+                    xmlhttp.open("GET","/cleanup?days_back=" + number, true);
+                    xmlhttp.send();
+                    
+                    //alert('number=' + number);
                     
                 } else if ( state == 'update' ) {
                     
-                    //xmlhttp.open("GET","/update_feed?feed_id=" + id + "&feed_url=" + url, true);
-                    //xmlhttp.send();
-                    alert('id=' + arg_one + ' and url=' + arg_two);
+                    xmlhttp.open("GET","/update_feed?feed_id=" + arg_one + "&feed_url=" + arg_two, true);
+                    xmlhttp.send();
+
+                    //alert('id=' + arg_one + ' and url=' + arg_two);
                     
                 } else if ( state == 'delete' ) {
                     
-                    //xmlhttp.open("GET","/delete_feed?feed_id=" + id, true);
-                    //xmlhttp.send();
-                    alert('id=' + arg_one);
+                    xmlhttp.open("GET","/delete_feed?feed_id=" + arg_one, true);
+                    xmlhttp.send();
+                    
+                    //alert('id=' + arg_one);
                     
                 }
             }
@@ -1039,13 +1054,12 @@ a:visited { color:white }
         
         <div class='column'>
             <fieldset>
-                Feed Name: <input type="text" size='30' id="add_feed_name">
+                Feed Name: <input type="text" size='35' id="add_feed_name">
                 <br> 
-                Feed URL: <input type="url" size='30' id="add_feed_url">
+                Feed URL: <input type="url" size='35' id="add_feed_url">
                 <br>
                 <button type="button" onClick="changeState('add', '', '')">Add Feed</button>
-                <div id='feedAdd'>
-                </div>
+                <div id='feedAdd'></div>
             </fieldset>
         </div>
         
@@ -1053,8 +1067,7 @@ a:visited { color:white }
             <fieldset>
                 Remove older than (days): <input type="number" size='2' id="days_back">
                 <button type="button" onClick="changeState('clean', '', '')">Clean Up</button>
-                <div id='cleanUp'>
-                </div>
+                <div id='cleanUp'></div>
             </fieldset>
         </div>
         
@@ -1062,8 +1075,7 @@ a:visited { color:white }
         
         <div class='column'>
             <fieldset>
-                <div id='feedChange'>
-                </div>
+                <div id='feedChange'></div>
                 <table>
                 % foreach my $row ( @$edit_rows ) {
                     % my ( $feed_id, $feed_name, $feed_url ) = @$row;
@@ -1074,7 +1086,7 @@ a:visited { color:white }
                         <td>
                             <form class='formWithButtons'>
                                 <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
-                                <input type='text' size='30' name='feed_url' value='<%= $feed_url %>'>
+                                <input type='text' size='35' name='feed_url' value='<%= $feed_url %>'>
                                 <button type="button" onClick="changeState('update', '<%= $feed_id %>', '<%= $feed_url %>')">Update</button>
                             </form>
                             <form class="formWithButtons">
