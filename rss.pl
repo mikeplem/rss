@@ -230,7 +230,7 @@ get '/maint_feeds' => sub {
 
 
 # add feeds to the database - DONE
-post '/add_feeds' => sub {
+get '/add_feeds' => sub {
     my $self = shift;
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
@@ -272,7 +272,7 @@ get '/update_news' => sub {
 };
 
 # update the feed status
-post '/update_feed' => sub {
+get '/update_feed' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
     my $feed_url = $self->param('feed_url');
@@ -288,7 +288,7 @@ post '/update_feed' => sub {
 };
 
 # delete a feed from the list
-post '/delete_feed' => sub {
+get '/delete_feed' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
 
@@ -312,18 +312,20 @@ get '/cleanup' => sub {
     # the user will provide a number of days to delete older than the current date
     # this SQL statement will find that actual date to use in the delete statement
     # below
-    my $get_prev_date = $dbh->prepare("select current_date - interval '? day'");
-    $get_prev_date->execute($days_back );
+    my $sql_days_back = "$days_back day";
+    my $prev_day_sql = "select current_date - cast (? as interval)";
+    my $get_prev_date = $dbh->prepare($prev_day_sql);
+    
+    $get_prev_date->execute($sql_days_back);
     my @date_to_remove_arr = $get_prev_date->fetchrow_array();
 
     my $remove_date = $date_to_remove_arr[0];
-    $get_prev_date->finish;
-
+    #$get_prev_date->finish;
+    
     my $remove_old_news = $dbh->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
-    $remove_old_news->finish;
+    #$remove_old_news->finish;
     
-    # $self->redirect_to('/');
     return $self->render(text => 'done', status => 200);
 };
 
