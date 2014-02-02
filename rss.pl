@@ -911,6 +911,11 @@ __DATA__
    }
 }
 
+fieldset {
+   border-style: none;
+   float: left;
+}
+
 .news {
     white-space: pre-line;
     /*white-space: pre-wrap;*/
@@ -937,8 +942,15 @@ li {
     padding-right: 20px;
 }
 
+.column {
+   padding-left: 5px;
+   padding-right: 5px;
+}
+
 .clear {
    clear: both;
+   padding-bottom: 10px;
+   margin-bottom: 10px;
 }
 
 tr:nth-child(even) {
@@ -960,7 +972,7 @@ a:visited { color:white }
         <title>Manage Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
         <script>
-            function changeState(state, id, link_id) {
+            function changeState(state, arg_one, arg_two) {
                 var xmlhttp;
                 
                 if (window.XMLHttpRequest) {
@@ -971,16 +983,41 @@ a:visited { color:white }
 
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        if ( state == "seen_all" ) {
-                            window.location.href = "/";
+                        
+                        if ( state == 'add' ) {
+                            document.getElementById('feedAdd').value = 'Feed Added';
+                        } else if ( state == 'clean' ) {
+                            document.getElementById('cleanUp').value = 'Cleared';
+                        } else if ( state == 'update' ) {
+                            document.getElementById('feedChange').value = 'Feed Updated';
+                        } else if ( state == delete' ) {
+                            document.getElementById('feedChange').value = 'Feed Deleted';
                         } else {
-                            window.location.reload(true);
+                            alert('Incorrect state provided');
                         }
                     }
                 }
                 
-                xmlhttp.open("GET","/update_news?feed_id=" + id + "&feed_type=" + state, true);
-                xmlhttp.send();
+                if ( state == 'add' ) {
+                    //xmlhttp.open("GET","/update_feeds?feed_name=" + name + "&feed_url=" + url, true);
+                    //xmlhttp.send();
+                    name = document.getElementById('add_feed_name').value;
+                    url = document.getElementById('add_feed_url').value;
+                    alert('name=' + name + ' and url=' + url);
+                } else if ( state == 'clean' ) {
+                    //xmlhttp.open("GET","/cleanup?days_back=" + number, true);
+                    //xmlhttp.send();
+                    number = document.getElementById('days_back').value;
+                    alert('number=' + number);
+                } else if ( state == 'update' ) {
+                    //xmlhttp.open("GET","/update_feed?feed_id=" + id + "&feed_url=" + url, true);
+                    //xmlhttp.send();
+                    alert('id=' + arg_one + ' and url=' + arg_two);
+                } else if ( state == 'delete' ) {
+                    //xmlhttp.open("GET","/delete_feed?feed_id=" + id, true);
+                    //xmlhttp.send();
+                    alert('id=' + arg_one);
+                }
             }
         </script>
         <style>
@@ -989,54 +1026,68 @@ a:visited { color:white }
     </head>
     <body>
 		%= include 'header'
-        <div>
-            <form action="<%=url_for('/add_feeds')->to_abs%>" method="post">
-                Feed Name: <input type="text" name="feed_name">
-                <br> 
-                Feed URL: <input type="text" name="feed_url">
-                <br>
-                <input type="submit" value="Add Feed">
-                <button type="button" onClick="changeState('add', '', '')">Add Feed</button>
-            </form>
-            <div id='feedAdd'>
-            </div>
+        
+        <div class='column'>
+            <fieldset>
+            
+                <form action="<%=url_for('/add_feeds')->to_abs%>" method="post">
+                    Feed Name: <input type="text" size='30' id="add_feed_name">
+                    <br> 
+                    Feed URL: <input type="url" size='30' id="add_feed_url">
+                    <br>
+                    <!-- <input type="submit" value="Add Feed"> -->
+                    <button type="button" onClick="changeState('add', '', '')">Add Feed</button>
+                </form>
+                <div id='feedAdd'>
+                </div>
+            
+            </fieldset>
         </div>
-        <div>
-            <form action="<%=url_for('/cleanup')->to_abs%>" method="post">
-                Remove older than (days): <input type="text" name="days_back">
-                <input type="submit" value="Clean Up">
-                <button type="button" onClick="changeState('clean', '', '')">Clean Up</button>
-            </form>
-            <div id='cleanUp'>
-            </div>
+        
+        <div class='column'>
+            <fieldset>
+                <form action="<%=url_for('/cleanup')->to_abs%>" method="post">
+                    Remove older than (days): <input type="number" size='2' id="days_back">
+                    <!-- <input type="submit" value="Clean Up"> -->
+                    <button type="button" onClick="changeState('clean', '', '')">Clean Up</button>
+                </form>
+                <div id='cleanUp'>
+                </div>
+            </fieldset>
         </div>
-        <div>
-            <div id='changed'>
+        
+        <div class='clear'></div>
+        
+        <div class='column'>
+            <fieldset>
+                <div id='feedChange'>
+                </div>
+                <table>
+                % foreach my $row ( @$edit_rows ) {
+                    % my ( $feed_id, $feed_name, $feed_url ) = @$row;
+                    <tr>
+                        <td><%= $feed_name %></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <form action="<%=url_for('/update_feed')->to_abs%>" method="post" class="formWithButtons">
+                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
+                                <input type='text' size='30' name='feed_url' value='<%= $feed_url %>'>
+                                <!-- <input type='submit' value='Update'> -->
+                                <button type="button" onClick="changeState('update', <%= $feed_id %>, <%= $feed_url %>)">Update</button>
+                            </form>
+                            <form action="<%=url_for('/delete_feed')->to_abs%>" method="post" class="formWithButtons">
+                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
+                                <!-- <input type='submit' value='Delete'> -->
+                                <button type="button" onClick="changeState('delete', <%= $feed_id %>, '')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                % }
+                </table>
             </div>
-            <table>
-            % foreach my $row ( @$edit_rows ) {
-                % my ( $feed_id, $feed_name, $feed_url ) = @$row;
-                <tr>
-                    <td><%= $feed_name %></td>
-                </tr>
-                <tr>
-                    <td>
-                        <form action="<%=url_for('/update_feed')->to_abs%>" method="post" class="formWithButtons">
-                            <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
-                            <input type='text' size='30' name='feed_url' value='<%= $feed_url %>'>
-                            <input type='submit' value='Update'>
-                            <button type="button" onClick="changeState('update', <%= $feed_id %>, <%= $feed_url %>)">Update</button>
-                        </form>
-                        <form action="<%=url_for('/delete_feed')->to_abs%>" method="post" class="formWithButtons">
-                            <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
-                            <input type='submit' value='Delete'>
-                            <button type="button" onClick="changeState('delete', <%= $feed_id %>, '')">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            % }
-            </table>
-        </div>
+        </fieldset>
+        
         %= include 'footer'
     </body>
 </html>
