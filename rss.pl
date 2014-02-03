@@ -804,38 +804,6 @@ __DATA__
     </body>
 </html>
 
-@@ feeds_added.html.ep
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>News Feeds Added</title>
-        <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
-        <style>
-            %= include 'rss_style'
-        </style>
-    </head>
-    <body>
-        Feeds Added
-        %= include 'footer'
-    </body>
-</html>
-
-@@ db_created.html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>News DB Created</title>
-        <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
-        <style>
-            %= include 'rss_style'
-        </style>
-    </head>
-    <body>
-        Database created or already exists
-        %= include 'footer'
-    </body>
-</html>
-
 @@ header.html.ep
 <div style='padding-bottom: 40px;'>
 <ul>
@@ -870,6 +838,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
     }
 }
 
@@ -879,6 +848,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
    }
 }
     
@@ -888,6 +858,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
     }
 }
     
@@ -897,6 +868,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
    }
 }
     
@@ -906,6 +878,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
    }
 }
 
@@ -915,6 +888,7 @@ __DATA__
         font-size: 14px;
         background-color: black;
         color: white;
+        margin-left: 10px;
    }
 }
 
@@ -967,6 +941,7 @@ tr:nth-child(even) {
 tr:nth-child(odd) {
     background: black;
 }
+
 
 a:link { color:white }
 a:visited { color:white }
