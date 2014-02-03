@@ -400,8 +400,6 @@ get '/add_news' => sub {
         # insert a bad url into the database
         if ( $tx->res->code !~ /200|501/ ) {
             
-            $self->clear_prepare();
-
             # feed_id, news_date, news_title, news_desc, news_url
             $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
