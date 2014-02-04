@@ -3,6 +3,8 @@
 use Mojolicious::Lite;
 use Mojo::UserAgent;
 use HTML::FormatText;
+use Time::Piece;
+use Time::Seconds;
 use Time::HiRes qw(usleep);
 use XML::Feed;
 use DateTime;
@@ -309,18 +311,11 @@ get '/cleanup' => sub {
     my $self = shift;
     my $days_back = $self->param('days_back');
 
-    # the user will provide a number of days to delete older than the current date
-    # this SQL statement will find that actual date to use in the delete statement
-    # below
-    my $sql_days_back = "$days_back day";
-    my $prev_day_sql = "select current_date - cast (? as interval)";
-    my $get_prev_date = $dbh->prepare($prev_day_sql);
-    
-    $get_prev_date->execute($sql_days_back);
-    my @date_to_remove_arr = $get_prev_date->fetchrow_array();
-
-    my $remove_date = $date_to_remove_arr[0];
-    #$get_prev_date->finish;
+    # find the datetime stamp some number of days back
+    # days back is provided by the user
+    my $current_time = localtime;    
+    $current_time -= ( $days_back * ONE_DAY );
+    my $remove_date = $current_time->datetime;
     
     my $remove_old_news = $dbh->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
