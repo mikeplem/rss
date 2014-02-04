@@ -316,11 +316,11 @@ get '/cleanup' => sub {
     my $current_time = localtime;    
     $current_time -= ( $days_back * ONE_DAY );
     my $remove_date = $current_time->datetime;
-    
-    my $remove_old_news = $dbh->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
+
+    my $remove_old_news = $self->db->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
-    #$remove_old_news->finish;
-    
+    $remove_old_news->finish;
+   
     return $self->render(text => 'done', status => 200);
 };
 
