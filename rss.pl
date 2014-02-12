@@ -332,6 +332,7 @@ get '/cleanup' => sub {
 get '/add_news' => sub {
     
     my $self = shift;
+    my $insert_news;
     
     print "\n---------------------\n" if $debug;
     print "Adding news\n\n" if $debug;
