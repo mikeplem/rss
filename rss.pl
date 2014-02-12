@@ -237,7 +237,7 @@ get '/add_feeds' => sub {
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
     
-    my $insert_feed = $self->db->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
+    my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
     $insert_feed->finish;
     
@@ -254,13 +254,13 @@ get '/update_news' => sub {
     my $update;
 
     if ( $feed_update eq "seen" ) {
-        $update = $self->db->prepare('update rss_news set news_seen = 1 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
     } elsif ( $feed_update eq "seen_all" ) {
-        $update = $self->db->prepare('update rss_news set news_seen = 1 where feed_id = ?');
+        $update = $dbh->prepare('update rss_news set news_seen = 1 where feed_id = ?');
     } elsif ( $feed_update eq "fav" ) {
-        $update = $self->db->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
     } elsif ( $feed_update eq "unfav" ) {
-        $update = $self->db->prepare('update rss_news set news_fav = 0 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_fav = 0 where news_id = ?');
     } else {
         print "an expected news_type was not provided\n";
         return $self->render(text => 'failed news_type', status => 500);
@@ -279,7 +279,7 @@ get '/update_feed' => sub {
     my $feed_id = $self->param('feed_id');
     my $feed_url = $self->param('feed_url');
 
-    my $update = $self->db->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
+    my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
     
     $update->execute($feed_url, $feed_id);
     $update->finish;
@@ -294,11 +294,11 @@ get '/delete_feed' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
 
-    my $delete_feed = $self->db->prepare('delete from rss_feeds where feed_id = ?');
+    my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
     $delete_feed->finish;
 
-    my $delete_news = $self->db->prepare('delete from rss_news where feed_id = ?');
+    my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
     $delete_news->finish;
     
@@ -364,9 +364,6 @@ get '/add_news' => sub {
     } else {
         $offset += 10;
     }
-
-    my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
-    my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
     
     # look through the feeds and get the RSS data
     while ( my @feed_data = $get_feeds->fetchrow_array() ) {
@@ -397,6 +394,7 @@ get '/add_news' => sub {
         if ( $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
+            $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
             print "\tskipping\n" if $debug;
@@ -469,8 +467,10 @@ get '/add_news' => sub {
             
             print "\tDoes the title exist?\n" if $debug;
             
+            my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
             $find->execute($title, $rss_id);
             my @count = $find->fetchrow_array();
+            $find->finish;
             
             # if the article does not exist in the database then add it
             # otherwise skip it
@@ -478,12 +478,16 @@ get '/add_news' => sub {
                 
                 print "\tAdd news\n" if $debug;
 
+                my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, 0, 0)");                
                 $insert_news->execute($rss_id, $date, $title, $desc_string, $url);
+                $insert_news->finish;
             }
             
         } # END foreach my $story ($feed->entries) {
         
     } # END while ( my @feed_data = $get_feeds->fetchrow_array() ) {
+
+    $get_feeds->finish;
 
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
