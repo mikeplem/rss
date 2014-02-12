@@ -332,7 +332,6 @@ get '/cleanup' => sub {
 get '/add_news' => sub {
     
     my $self = shift;
-    my $insert_news;
     
     print "\n---------------------\n" if $debug;
     print "Adding news\n\n" if $debug;
@@ -344,7 +343,7 @@ get '/add_news' => sub {
    
     # get the total number of feeds we have so we know when
     # to stop the recursive call to add_news
-    my $feed_count = $self->db->prepare("select count(*) from rss_feeds");
+    my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
     $feed_count->execute();
     my @num_feeds = $feed_count->fetchrow_array();
     $feed_count->finish;
@@ -356,7 +355,7 @@ get '/add_news' => sub {
     $total_feeds += 10;
     
     # get the feeds to update 10 at a time
-    my $get_feeds = $self->db->prepare("select feed_id, feed_name, feed_url from rss_feeds LIMIT 10 OFFSET ?");
+    my $get_feeds = $dbh->prepare("select feed_id, feed_name, feed_url from rss_feeds LIMIT 10 OFFSET ?");
     $get_feeds->execute($offset);
 
     # setup the offset for the next call if there is one
@@ -366,9 +365,8 @@ get '/add_news' => sub {
         $offset += 10;
     }
 
-    $insert_news = $self->db->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
-    $find = $self->db->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
-    $insert_news = $self->db->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, 0, 0)");                
+    my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
+    my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
     
     # look through the feeds and get the RSS data
     while ( my @feed_data = $get_feeds->fetchrow_array() ) {
