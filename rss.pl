@@ -239,7 +239,7 @@ get '/add_feeds' => sub {
     
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
-    $insert_feed->finish;
+    #$insert_feed->finish;
     
     return $self->render(text => 'done', status => 200);
     #$self->render('feeds_added');
@@ -267,7 +267,7 @@ get '/update_news' => sub {
     }
     
     $update->execute($feed_id);
-    $update->finish;
+    #$update->finish;
     
     return $self->render(text => 'done', status => 200);
     
@@ -282,7 +282,7 @@ get '/update_feed' => sub {
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
     
     $update->execute($feed_url, $feed_id);
-    $update->finish;
+    #$update->finish;
     
     #$self->render('edit_feeds');
     return $self->render(text => 'done', status => 200);
@@ -296,11 +296,11 @@ get '/delete_feed' => sub {
 
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
-    $delete_feed->finish;
+    #$delete_feed->finish;
 
     my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
-    $delete_news->finish;
+    #$delete_news->finish;
     
     #$self->render('edit_feeds');
     return $self->render(text => 'done', status => 200);
@@ -319,7 +319,7 @@ get '/cleanup' => sub {
 
     my $remove_old_news = $self->db->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
-    $remove_old_news->finish;
+    #$remove_old_news->finish;
    
     return $self->render(text => 'done', status => 200);
 };
@@ -332,7 +332,7 @@ get '/cleanup' => sub {
 get '/add_news' => sub {
     
     my $self = shift;
-    my $insert_news;
+    #my $insert_news;
     
     print "\n---------------------\n" if $debug;
     print "Adding news\n\n" if $debug;
@@ -347,7 +347,7 @@ get '/add_news' => sub {
     my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
     $feed_count->execute();
     my @num_feeds = $feed_count->fetchrow_array();
-    $feed_count->finish;
+    #$feed_count->finish;
     
     # create the number of feeds to use as a stopping point
     # with the recursive call.  this number is the break
@@ -365,6 +365,9 @@ get '/add_news' => sub {
     } else {
         $offset += 10;
     }
+
+    my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
+    my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
     
     # look through the feeds and get the RSS data
     while ( my @feed_data = $get_feeds->fetchrow_array() ) {
@@ -395,7 +398,7 @@ get '/add_news' => sub {
         if ( $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
-            $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
+#            $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
             print "\tskipping\n" if $debug;
@@ -468,10 +471,10 @@ get '/add_news' => sub {
             
             print "\tDoes the title exist?\n" if $debug;
             
-            my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
+#            my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
             $find->execute($title, $rss_id);
             my @count = $find->fetchrow_array();
-            $find->finish;
+            #$find->finish;
             
             # if the article does not exist in the database then add it
             # otherwise skip it
@@ -479,16 +482,16 @@ get '/add_news' => sub {
                 
                 print "\tAdd news\n" if $debug;
 
-                my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, 0, 0)");                
-                $insert_news->execute($rss_id, $date, $title, $desc_string, $url);
-                $insert_news->finish;
+#                my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, 0, 0)");                
+                $insert_news->execute($rss_id, $date, $title, $desc_string, $url, 0, 0);
+                #$insert_news->finish;
             }
             
         } # END foreach my $story ($feed->entries) {
         
     } # END while ( my @feed_data = $get_feeds->fetchrow_array() ) {
 
-    $get_feeds->finish;
+    #$get_feeds->finish;
 
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
@@ -986,8 +989,6 @@ a:visited { color:white }
                     xmlhttp.open("GET","/add_feeds?feed_name=" + name + "&feed_url=" + url, true);
                     xmlhttp.send();
                     
-                    //alert('name=' + name + ' and url=' + url);
-                    
                 } else if ( state == 'clean' ) {
                     
                     number = document.getElementById('days_back').value;
@@ -995,21 +996,15 @@ a:visited { color:white }
                     xmlhttp.open("GET","/cleanup?days_back=" + number, true);
                     xmlhttp.send();
                     
-                    //alert('number=' + number);
-                    
                 } else if ( state == 'update' ) {
                     
                     xmlhttp.open("GET","/update_feed?feed_id=" + arg_one + "&feed_url=" + arg_two, true);
                     xmlhttp.send();
 
-                    //alert('id=' + arg_one + ' and url=' + arg_two);
-                    
                 } else if ( state == 'delete' ) {
                     
                     xmlhttp.open("GET","/delete_feed?feed_id=" + arg_one, true);
                     xmlhttp.send();
-                    
-                    //alert('id=' + arg_one);
                     
                 }
             }
