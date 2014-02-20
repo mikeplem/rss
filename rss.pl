@@ -11,8 +11,11 @@ use DateTime;
 use DBI;
 use utf8;
 
+# turn off buffering
 $| = 1;
 
+# if the user wants to see extra debugging text
+# set this value to 1
 my $debug = 0;
 
 my $now_time = localtime();
@@ -24,7 +27,7 @@ $mon  = "0" . $mon if $mon < 10;
 $year = $year + 1900;
 
 
-# hypnotoad configuration
+# hypnotoad IP address and port to listen
 app->config(
     hypnotoad => {
         listen => ['http://192.168.1.20:90'],
@@ -38,10 +41,11 @@ my %months = (
     Oct => '09', Nov => '10', Dec => '11'
 );
 
-my $pg_db = "rss_db";
-my $user  = "rss_user";
-my $pass  = "rss_user";
+my $pg_db = "rss_db";   # database name
+my $user  = "rss_user"; # database username
+my $pass  = "rss_user"; # database user password
 
+# database connection
 my $dbh = DBI->connect("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 $dbh->{RaiseError}     = 1;
 $dbh->{PrintError}     = 0;
@@ -49,7 +53,7 @@ $dbh->{pg_enable_utf8} = 1;
 
 # ------------- NEWS HELPER FUNCTIONS -------------
 
-# this provides a way to get to the database in the template
+# setup a help to the database handle
 helper db => sub { $dbh };
 
 # create the database
@@ -79,6 +83,9 @@ helper create_tables => sub {
 
 };
 
+# SQL query for listing the RSS feeds
+# this will only list feeds that actually have new news items
+# to view
 helper select_feeds => sub {
     my $self = shift;
 
@@ -118,6 +125,8 @@ helper select_feeds => sub {
 
 };
 
+# SQL query to view the unread news items for a RSS feed
+# do not show any fav'ed news items
 helper select_news => sub {
     my $self = shift;
 	my $rss_feed_id = shift;
@@ -139,6 +148,7 @@ helper select_news => sub {
 	
 };
 
+# SQL query to select only the fav'ed news items
 helper select_favs => sub {
     my $self = shift;
 	
@@ -159,6 +169,7 @@ helper select_favs => sub {
 	
 };
 
+# SQL query to list all the RSS feeds
 helper edit_feed_list => sub {
     my $self = shift;
 	
@@ -181,7 +192,7 @@ app->select_feeds || app->create_tables;
 
 # ------------- NEWS ROUTES -------------
 
-# setup base route - DONE
+# this route will show the RSS feeds
 any '/' => sub {
 	my $self = shift;
 	
@@ -190,7 +201,9 @@ any '/' => sub {
 	$self->render('list_feeds');
 };
 
-# get the id of the feed to view - DONE
+# show the list of news from the feed
+# :feed is the feed_number from the database
+# :name is the name shown from the list of RSS feeds
 get '/view_news/:feed/:name' => sub {
     my $self = shift;
     my $news_id = $self->param('feed');
@@ -203,7 +216,7 @@ get '/view_news/:feed/:name' => sub {
     $self->render('rss');
 };
 
-# setup base route - DONE
+# show the news items the user chose to favorite
 get '/favs' => sub {
 	my $self = shift;
 	
@@ -212,7 +225,7 @@ get '/favs' => sub {
 	$self->render('favs');
 };
 
-# setup base route - DONE
+# edit the RSS feed list
 get '/edit_feeds' => sub {
 	my $self = shift;
 	
@@ -221,7 +234,10 @@ get '/edit_feeds' => sub {
 	$self->render('edit_feeds');
 };
 
-# setup base route - DONE
+# show the page that will allow the user to
+# 1. add a RSS feed
+# 2. edit RSS feeds
+# 3. delete RSS news items  that have not be fav'ed
 get '/maint_feeds' => sub {
 	my $self = shift;
 	
@@ -231,7 +247,7 @@ get '/maint_feeds' => sub {
 };
 
 
-# add feeds to the database - DONE
+# add a RSS feed to the database
 get '/add_feeds' => sub {
     my $self = shift;
     my $feed_name = $self->param('feed_name');
@@ -239,14 +255,15 @@ get '/add_feeds' => sub {
     
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
-    #$insert_feed->finish;
     
     return $self->render(text => 'done', status => 200);
-    #$self->render('feeds_added');
 };
 
-# update the news feed with the state chosen by
-# the button the user hits - DONE
+# Change state of RSS news item depending on user access
+# seen     - mark an individual news item read
+# seen_all - mark all news items under a feed as read
+# fav      - mark a news item as a favorite
+# unfav    - unfavorite a previously fav'ed item
 get '/update_news' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
@@ -266,14 +283,12 @@ get '/update_news' => sub {
         return $self->render(text => 'failed news_type', status => 500);
     }
     
-    $update->execute($feed_id);
-    #$update->finish;
-    
+    $update->execute($feed_id);    
     return $self->render(text => 'done', status => 200);
     
 };
 
-# update the feed status
+# update a RSS feed URL
 get '/update_feed' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
@@ -282,31 +297,26 @@ get '/update_feed' => sub {
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
     
     $update->execute($feed_url, $feed_id);
-    #$update->finish;
-    
-    #$self->render('edit_feeds');
     return $self->render(text => 'done', status => 200);
     
 };
 
-# delete a feed from the list
+# delete a RSS feed as well as all news items from that feed
 get '/delete_feed' => sub {
     my $self = shift;
     my $feed_id = $self->param('feed_id');
 
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
-    #$delete_feed->finish;
 
     my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
-    #$delete_news->finish;
     
-    #$self->render('edit_feeds');
     return $self->render(text => 'done', status => 200);
 };
 
-# clean up the database
+# remove any items from the database that is older than the
+# number of the days the user chosses
 get '/cleanup' => sub {
     my $self = shift;
     my $days_back = $self->param('days_back');
@@ -319,20 +329,19 @@ get '/cleanup' => sub {
 
     my $remove_old_news = $self->db->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
-    #$remove_old_news->finish;
    
     return $self->render(text => 'done', status => 200);
 };
 
-# add news into the database
-# this can also be used as a way to update the news
-# due to performance issues we actually only add
-# 10 feeds at a time.  the script will call itself
-# until all feeds we know about have been updated
+# iterate over all RSS feeds add news items to the
+# database
+# as a way to keep a web server from timing out
+# only cycle 10 feeds at a time.  the SQL query uses
+# the limit capability to move to the next group of
+# RSS feeds
 get '/add_news' => sub {
     
     my $self = shift;
-    #my $insert_news;
     
     print "\n---------------------\n" if $debug;
     print "Adding news\n\n" if $debug;
@@ -347,7 +356,6 @@ get '/add_news' => sub {
     my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
     $feed_count->execute();
     my @num_feeds = $feed_count->fetchrow_array();
-    #$feed_count->finish;
     
     # create the number of feeds to use as a stopping point
     # with the recursive call.  this number is the break
@@ -366,10 +374,11 @@ get '/add_news' => sub {
         $offset += 10;
     }
 
+    # prepare queries for instering news and also finding items that may already exist in the database
     my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
     my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
     
-    # look through the feeds and get the RSS data
+    # iterate over each RSS feed
     while ( my @feed_data = $get_feeds->fetchrow_array() ) {
         
         my $rss_id   = $feed_data[0];
@@ -379,6 +388,7 @@ get '/add_news' => sub {
         print "$rss_name - head request\n" if $debug;
 
         # check that the URL exists by doing a HEAD against the URL
+        # if there is a problem access a feed skip to the next feed
         my $ua = Mojo::UserAgent->new;
         if ( ! defined $ua ) {
             print "\tUA not defined\n" if $debug;
@@ -392,13 +402,14 @@ get '/add_news' => sub {
             usleep(250);
             next;
         }
- 
-        # the URL was not correct as a 200 did not return
-        # insert a bad url into the database
+
+        # Check the result code of the HEAD request.  I have found that even when 
+        # a 501 is returned the RSS feed may still work.  If a 200 or 501 is not returned
+        # then insert a defaul future date bad url message.  This will allow the user to know
+        # there way a problem
         if ( $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
-#            $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
             print "\tskipping\n" if $debug;
@@ -407,6 +418,8 @@ get '/add_news' => sub {
 
         print "\tAbout to parse the RSS URL - $rss_url\n" if $debug;
 
+        # Attempt to get the RSS feed.  If it works save it to $feed
+        # otherwise skip to the next feed
         my $feed;
         eval {
             # the URL is good so pull it
@@ -426,7 +439,7 @@ get '/add_news' => sub {
 
         print "\tURL parsed\n" if $debug;
 
-        # look through each item in the RSS feed
+        # iterate over each news item of the RSS feed
         foreach my $story ($feed->entries) {
            
             my $dt      = 0;
@@ -440,8 +453,8 @@ get '/add_news' => sub {
             my $minute  = 0;
             my $second  = 0;
  
-            # if the feed includes a date use it but it not
-            # create our own using the current time
+            # if the feed includes a date use it
+            # if not create our own using the current time
             if ( defined $story->issued ) {
                 $date  = $story->issued;
             } else {
@@ -455,43 +468,42 @@ get '/add_news' => sub {
                 $date   = "$year-$month-$day" . "T" . "$hour:$minute:$second";
             }
             
+            # get the news item title and if it does not exist prvide a
+            # place holder title
             my $title = $story->title;
             $title    = "Empty title" if ! defined $title;
-            
+
+            # get the news for the specific item and if it does not exist prvide a
+            # place holder text field    
             my $desc  = $story->content->body;
             $desc     = "Empty body" if ! defined $desc;
             
             my $url   = $story->link;
             $url      = $rss_url if ! defined $url;
 
-            # strip HTML tags
+            # Clear up HTML and remove image tags to clear up what you view
             my $desc_string = HTML::FormatText->format_string($desc);
             $desc_string =~ s/\[IMAGE\]//g;
             $desc_string =~ s/\s+$/\n\n/;
             
             print "\tDoes the title exist?\n" if $debug;
-            
-#            my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
+
+            # Have we already downloaded this news item?
+            # Check by lookin at the RSS news item title
             $find->execute($title, $rss_id);
             my @count = $find->fetchrow_array();
-            #$find->finish;
             
             # if the article does not exist in the database then add it
             # otherwise skip it
             if ( $count[0] == 0 ) {
-                
                 print "\tAdd news\n" if $debug;
-
-#                my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, 0, 0)");                
                 $insert_news->execute($rss_id, $date, $title, $desc_string, $url, 0, 0);
-                #$insert_news->finish;
             }
             
         } # END foreach my $story ($feed->entries) {
         
     } # END while ( my @feed_data = $get_feeds->fetchrow_array() ) {
 
-    #$get_feeds->finish;
 
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
@@ -896,7 +908,6 @@ fieldset {
 
 .news {
     white-space: pre-line;
-    /*white-space: pre-wrap;*/
 }
 
 .header {
@@ -1067,3 +1078,42 @@ a:visited { color:white }
         %= include 'footer'
     </body>
 </html>
+
+__END__
+
+=head1 NAME
+
+rss.pl - Mojolicious based RSS news aggregator
+
+=head1 SYNOPSIS
+
+Single user, PostgreSQL backed, Mojolicious based RSS news aggregator
+
+=head1 DESCRIPTION
+
+This is a single user RSS news aggregator that was created after Google closed down Reader.
+
+=head1 CPAN
+
+=head2 README
+
+This reader was written against Mojolicous 4.72 but probably will work against older and newer versions as this script uses a very small portion of Mojolicious' capability.
+
+I used Google Reader quite a bit but when they closed it down I decided to write my own version.  This is the result of that desire.  I specifically wrote it for me and have not put any multi-user capability into the script.
+
+
+
+=head2 PREREQUISITES
+
+L<Mojolicious::Lite>
+L<Mojo::UserAgent>
+L<HTML::FormatText>
+L<Time::Piece>
+L<Time::Seconds>
+L<Time::HiRes>
+L<XML::Feed>
+L<DateTime>
+L<DBI>
+L<utf8>
+
+=cut
