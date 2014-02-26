@@ -58,7 +58,7 @@ $dbh->{pg_enable_utf8} = 1;
 
 # add database tracing - SQL or DBD
 if ( $sql_debug ) {
-    $dbh->trace('SQL', '/var/www/logs/sql_trace.log');
+    $dbh->trace('SQL', 'sql_trace.log');
 }
 
 # ------------- NEWS HELPER FUNCTIONS -------------
