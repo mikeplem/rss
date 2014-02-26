@@ -1110,21 +1110,51 @@ When you first run the application it will create the necessary tables and their
 
 =head3
 
+Main screen actions
+
+=head4
+
+Get the latest feeds by clicking Update
+
+=head4
+
+View your favorited items by click Favs
+
+=head4
+
+View the current RSS feeds by click View
+
+=head4
+
+Go back to the top of a page be click Top at the bottom of the screen
+
+=head3
+
+Viewing news for a feed
+    Click on the news name and the items for that feed will list
+    
+=head4
+
+If you want to mark all items of the feed being viewed as read then click All Read.  If you want to only mark an individual news itam as read then click Read under the title of a news title.  If you want to favorite a news item click Fav.
+
+Once you get to the fifth news item and for each item there after you will have a link that says Top next to the news title.  Click this to go back to the top of the page.
+
+=head3
+
 Manage Feeds
     You access feed management by clicking the Manage link.
 
 =head4
 
-    Add feed names and URLs and then click Add Feed.
+Add feed names and URLs and then click Add Feed.
 
 =head4
 
-    To remove RSS feeds find the feed in the list and click its Delete button
+To remove RSS feeds find the feed in the list and click its Delete button
     
 =head4
 
-    To update a RSS feeds URL find the feed in the list fill in the new URL and click the Update button
-    
+To update a RSS feeds URL find the feed in the list fill in the new URL and click the Update button
     
 =head2 PREREQUISITES
 
