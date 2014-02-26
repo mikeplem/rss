@@ -11,6 +11,8 @@ use DateTime;
 use DBI;
 use utf8;
 
+$VERSION = "1.0";
+
 # turn off buffering
 $| = 1;
 
@@ -18,8 +20,7 @@ $| = 1;
 # set this value to 1
 my $debug = 0;
 
-# if the user wants to see SQL tracing set this value
-# to 1
+# if the user wants to see SQL tracing set this value to 1
 my $sql_debug = 1;
 
 my $now_time = localtime();
@@ -1086,6 +1087,7 @@ a:visited { color:white }
 </html>
 
 __END__
+
 =head1 NAME
 
 rss.pl - Mojolicious based RSS news aggregator
@@ -1098,9 +1100,7 @@ Single user, PostgreSQL backed, Mojolicious based RSS news aggregator
 
 This is a single user RSS news aggregator that was created after Google closed down Reader.
 
-=head1 CPAN
-
-=head2 README
+=head1 README
 
 This reader was written against Mojolicous 4.72 but probably will work against older and newer versions as this script uses a very small portion of Mojolicious' capability.
 
@@ -1108,65 +1108,117 @@ I used Google Reader quite a bit but when they closed it down I decided to write
 
 When you first run the application it will create the necessary tables and their indexes if they do not exist.
 
-=head3
+=head1 USAGE
 
-Main screen actions
+=head2 Main screen actions
 
-=head4
+=over 3
+
+=item Update
 
 Get the latest feeds by clicking Update
 
-=head4
+=item Favs
 
 View your favorited items by click Favs
 
-=head4
+=item View
 
 View the current RSS feeds by click View
 
-=head4
+=item Top
 
 Go back to the top of a page be click Top at the bottom of the screen
 
-=head3
+=back
 
-Viewing news for a feed
-    Click on the news name and the items for that feed will list
-    
-=head4
+=head2 Viewing news for a feed
+
+Click on the news name and the items for that feed will list
+
+=head2 Options for reading and favoriting news items
 
 If you want to mark all items of the feed being viewed as read then click All Read.  If you want to only mark an individual news itam as read then click Read under the title of a news title.  If you want to favorite a news item click Fav.
 
 Once you get to the fifth news item and for each item there after you will have a link that says Top next to the news title.  Click this to go back to the top of the page.
 
-=head3
+=head2 Manage Feeds
 
-Manage Feeds
-    You access feed management by clicking the Manage link.
+You access feed management by clicking the Manage link.
 
-=head4
+=over 3
 
-Add feed names and URLs and then click Add Feed.
+=item Add Feed
 
-=head4
+Add feed names and URLs and then click Add Feed
+
+=item Delete
 
 To remove RSS feeds find the feed in the list and click its Delete button
-    
-=head4
+
+=item Update
 
 To update a RSS feeds URL find the feed in the list fill in the new URL and click the Update button
-    
+
+=back
+
 =head2 PREREQUISITES
 
-L<Mojolicious::Lite>
-L<Mojo::UserAgent>
-L<HTML::FormatText>
-L<Time::Piece>
-L<Time::Seconds>
-L<Time::HiRes>
-L<XML::Feed>
-L<DateTime>
-L<DBI>
-L<utf8>
+=over 1
+
+=item PostgreSQL
+
+=item Mojolicious::Lite
+
+=item Mojo::UserAgent
+
+=item HTML::FormatText
+
+=item Time::Piece
+
+=item Time::Seconds
+
+=item Time::HiRes
+
+=item XML::Feed
+
+=item DateTime
+
+=item DBI
+
+=item utf8
+
+=back
+
+=head1 AUTHOR
+
+Mike Plemmons, <mikeplemmons@gmail.com>
+
+=head1 LICENSE
+
+Copyright (c) 2014, Mike Plemmons
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of Mike Plemmons nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL MIKE PLEMMONS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =cut
