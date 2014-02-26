@@ -18,6 +18,10 @@ $| = 1;
 # set this value to 1
 my $debug = 0;
 
+# if the user wants to see SQL tracing set this value
+# to 1
+my $sql_debug = 1;
+
 my $now_time = localtime();
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -50,6 +54,11 @@ my $dbh = DBI->connect("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 $dbh->{RaiseError}     = 1;
 $dbh->{PrintError}     = 0;
 $dbh->{pg_enable_utf8} = 1;
+
+# add database tracing - SQL or DBD
+if ( $sql_debug ) {
+    $dbh->trace('SQL', '/var/www/logs/sql_trace.log');
+}
 
 # ------------- NEWS HELPER FUNCTIONS -------------
 
@@ -315,8 +324,9 @@ get '/delete_feed' => sub {
     return $self->render(text => 'done', status => 200);
 };
 
-# remove any items from the database that is older than the
-# number of the days the user chosses
+# remove only the actual detail of the news as it takes up the most space
+# and because the title is used to determine if we already downloaded an
+# existing news item
 get '/cleanup' => sub {
     my $self = shift;
     my $days_back = $self->param('days_back');
@@ -327,7 +337,7 @@ get '/cleanup' => sub {
     $current_time -= ( $days_back * ONE_DAY );
     my $remove_date = $current_time->datetime;
 
-    my $remove_old_news = $self->db->prepare("delete from rss_news where news_date <= ? and news_fav = '0'");
+    my $remove_old_news = $self->db->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
    
     return $self->render(text => 'done', status => 200);
