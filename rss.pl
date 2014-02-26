@@ -11,7 +11,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-$VERSION = "1.0";
+our $VERSION = "1.0";
 
 # turn off buffering
 $| = 1;
