@@ -816,10 +816,8 @@ __DATA__
 @@ header.html.ep
 <div style='padding-bottom: 40px;'>
 <ul>
-<!-- <li><a href="<%=url_for('/add_feed')->to_abs%>">Add</a></li> -->
 <li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li>
 <li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li>
-<!-- <li><a href="<%=url_for('/edit_feeds')->to_abs%>">Edit</a></li> -->
 <li><a href="<%=url_for('/')->to_abs%>">View</a></li>
 <li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li>
 </ul>
@@ -831,10 +829,8 @@ __DATA__
 <div class='clear'></div>
 <ul>
 <li><a href='#top'>Top</a></li>
-<!-- <li><a href="<%=url_for('/add_feed')->to_abs%>">Add</a></li> -->
 <li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li>
 <li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li>
-<!-- <li><a href="<%=url_for('/edit_feeds')->to_abs%>">Edit</a></li> -->
 <li><a href="<%=url_for('/')->to_abs%>">View</a></li>
 <li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li>
 </ul>
@@ -1080,7 +1076,6 @@ a:visited { color:white }
 </html>
 
 __END__
-
 =head1 NAME
 
 rss.pl - Mojolicious based RSS news aggregator
@@ -1101,8 +1096,26 @@ This reader was written against Mojolicous 4.72 but probably will work against o
 
 I used Google Reader quite a bit but when they closed it down I decided to write my own version.  This is the result of that desire.  I specifically wrote it for me and have not put any multi-user capability into the script.
 
+When you first run the application it will create the necessary tables and their indexes if they do not exist.
 
+=head3
 
+Manage Feeds
+    You access feed management by clicking the Manage link.
+
+=head4
+
+    Add feed names and URLs and then click Add Feed.
+
+=head4
+
+    To remove RSS feeds find the feed in the list and click its Delete button
+    
+=head4
+
+    To update a RSS feeds URL find the feed in the list fill in the new URL and click the Update button
+    
+    
 =head2 PREREQUISITES
 
 L<Mojolicious::Lite>
