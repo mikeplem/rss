@@ -21,7 +21,7 @@ $| = 1;
 my $debug = 0;
 
 # if the user wants to see SQL tracing set this value to 1
-my $sql_debug = 1;
+my $sql_debug = 0;
 
 my $now_time = localtime();
 
