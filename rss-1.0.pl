@@ -35,7 +35,7 @@ $year = $year + 1900;
 # hypnotoad IP address and port to listen
 app->config(
     hypnotoad => {
-        listen => ['http://192.168.1.20:90'],
+        listen => ['http://IPADDRESS:PORT'],
     }
 );
 
