@@ -71,7 +71,7 @@ helper create_tables => sub {
 
     my $self = shift;
 
-	warn "Creating rss tables\n";
+	warn "    Creating rss tables\n";
 	
     $self->db->do(
         'create table if not exists rss_feeds (feed_id serial primary key, feed_name text, feed_url text)'
@@ -90,6 +90,22 @@ helper create_tables => sub {
     
     $self->db->do('create index rss_feeds_idx on rss_feeds (feed_id)');
     $self->db->do('create index rss_news_idx on rss_news (news_id, feed_id, news_title)');
+
+};
+
+# Check if the the first table exists
+# this helper will be used later when this script runs
+# If the table does not exist it will be created then the
+# rest of the script will continue
+helper check_tables => sub {
+    my $self = shift;
+
+    warn "    Checking if the tables exist\n";
+    
+    my $ret = $self->db->prepare("select count(*) from pg_class where relname='rss_feeds'");
+    $ret->execute();
+    my @count = $ret->fetchrow_array();
+    return $count[0];
 
 };
 
@@ -197,8 +213,12 @@ helper edit_feed_list => sub {
 };
 
 
-# if the select feeds fails then create the database tables
-app->select_feeds || app->create_tables;
+# if the index does not exist then create the tables
+# else just run the select feeds helper
+if ( app->check_tables == 0 ) {
+    app->create_tables;
+}
+app->select_feeds;
 
 # ------------- NEWS ROUTES -------------
 
@@ -1162,7 +1182,74 @@ To update a RSS feeds URL find the feed in the list fill in the new URL and clic
 
 =back
 
-=head2 PREREQUISITES
+=head1 CONFIGURATION
+
+To use this script there are several items that need to be modified before the script can be used.
+
+You will need to change the following areas at the top this of this script.
+
+=head2 Example Database Creation
+
+It is left to the reader to create the database and database owner as you may have specific configurations but this may give you some help.  Yoy may need to su to the user of the PostgreSQL process in order to create the user.
+
+=over 3
+
+=item 1a. Create the database owner from the shell prompt
+
+C<<< # createuser -P DBUSER >>>
+
+=item 1b. Create the database owner from the psql prompt
+
+C<<< psql> create user DBUSER with password 'DBPASS'; >>>
+
+=item 2a. Create the database from the shell prompt
+
+C<<< # createdb DBNAME -O DBUSER >>>
+
+=item 2b. Create the database from the psql prompt
+
+C<<< psql> create database DBNAME with owner DBUSER; >>>
+
+=back
+
+=head2 Network Access
+
+You need to replace IPADDRESS:PORT with the address and port you want the server to listen
+
+app->config(
+    hypnotoad => {
+        listen => ['http://IPADDRESS:PORT'],
+    }
+);
+
+
+=head2 Database Configuration
+
+You also need to replace  DBNAME, DBUSER, DBPASS with the relevant information for your PostgreSQL database
+
+=over 3
+
+=item my $pg_db = "DBNAME"; # database name
+
+=item my $user  = "DBUSER"; # database username
+
+=item my $pass  = "DBPASS"; # database user password
+
+=back
+
+=head1 RUNNING
+
+Make sure the PostgreSQL database server is already running.
+
+Once you have made the necessary configuration changes you will want to start this script like so:
+
+C<<< # hypnotoad -f rss-1.0.pl >>>
+
+Now point your browser to the IP address and port your configured.
+
+When you start the application it will automatically create the table spaces and necessary indices.
+
+=head1 PREREQUISITES
 
 =over 1
 
@@ -1192,7 +1279,7 @@ To update a RSS feeds URL find the feed in the list fill in the new URL and clic
 
 =head1 AUTHOR
 
-Mike Plemmons, <mikeplemmons@gmail.com>
+Mike Plemmons, <mikeplem@cpan.org>
 
 =head1 LICENSE
 
