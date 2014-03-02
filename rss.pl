@@ -11,7 +11,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 
 # turn off buffering
 $| = 1;
@@ -35,7 +35,7 @@ $year = $year + 1900;
 # hypnotoad IP address and port to listen
 app->config(
     hypnotoad => {
-        listen => ['http://192.168.1.20:90'],
+        listen => ['http://IPADDRESS:PORT'],
     }
 );
 
@@ -46,9 +46,9 @@ my %months = (
     Oct => '09', Nov => '10', Dec => '11'
 );
 
-my $pg_db = "rss_db";   # database name
-my $user  = "rss_user"; # database username
-my $pass  = "rss_user"; # database user password
+my $pg_db = "DBNAME";   # database name
+my $user  = "DBUSER"; # database username
+my $pass  = "DBPASS"; # database user password
 
 # database connection
 my $dbh = DBI->connect("dbi:Pg:dbname=$pg_db", "$user", "$pass");
@@ -68,7 +68,6 @@ helper db => sub { $dbh };
 
 # create the database
 helper create_tables => sub {
-
     my $self = shift;
 
 	warn "    Creating rss tables\n";
@@ -78,14 +77,15 @@ helper create_tables => sub {
     );
         
     $self->db->do(
-        'create table if not exists rss_news (news_id serial primary key, 
-												feed_id serial, 
-												news_date text, 
-												news_title text, 
-												news_desc text, 
-												news_url text, 
-												news_seen smallint, 
-												news_fav smallint)'
+        'create table if not exists rss_news (
+            news_id serial primary key, 
+            feed_id serial, 
+			news_date text, 
+			news_title text, 
+			news_desc text, 
+			news_url text, 
+			news_seen smallint, 
+			news_fav smallint)'
     );
     
     $self->db->do('create index rss_feeds_idx on rss_feeds (feed_id)');
@@ -115,9 +115,7 @@ helper check_tables => sub {
 helper select_feeds => sub {
     my $self = shift;
 
-	my $get_feeds = eval {
-		
-		$self->db->prepare('
+	my $get_feeds = $self->db->prepare('
 		    select
 			    rf.feed_id, rf.feed_name
 		    from
@@ -142,9 +140,7 @@ helper select_feeds => sub {
 				    )
 		    order by
 			    rf.feed_name asc
-		')
-	
-	} || return undef; # end of the eval of the prepare statement
+		');
 	
 	$get_feeds->execute();
 	return $get_feeds->fetchall_arrayref;
@@ -154,7 +150,7 @@ helper select_feeds => sub {
 # SQL query to view the unread news items for a RSS feed
 # do not show any fav'ed news items
 helper select_news => sub {
-    my $self = shift;
+    my $self        = shift;
 	my $rss_feed_id = shift;
 	
 	my $get_news = $self->db->prepare('
@@ -235,8 +231,8 @@ any '/' => sub {
 # :feed is the feed_number from the database
 # :name is the name shown from the list of RSS feeds
 get '/view_news/:feed/:name' => sub {
-    my $self = shift;
-    my $news_id = $self->param('feed');
+    my $self      = shift;
+    my $news_id   = $self->param('feed');
     my $news_name = $self->param('name');
     
     my $news_rows = $self->select_news($news_id);
@@ -279,7 +275,7 @@ get '/maint_feeds' => sub {
 
 # add a RSS feed to the database
 get '/add_feeds' => sub {
-    my $self = shift;
+    my $self      = shift;
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
     
@@ -295,8 +291,8 @@ get '/add_feeds' => sub {
 # fav      - mark a news item as a favorite
 # unfav    - unfavorite a previously fav'ed item
 get '/update_news' => sub {
-    my $self = shift;
-    my $feed_id = $self->param('feed_id');
+    my $self        = shift;
+    my $feed_id     = $self->param('feed_id');
     my $feed_update = $self->param('feed_type');
     my $update;
 
@@ -320,8 +316,8 @@ get '/update_news' => sub {
 
 # update a RSS feed URL
 get '/update_feed' => sub {
-    my $self = shift;
-    my $feed_id = $self->param('feed_id');
+    my $self     = shift;
+    my $feed_id  = $self->param('feed_id');
     my $feed_url = $self->param('feed_url');
 
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
@@ -333,7 +329,7 @@ get '/update_feed' => sub {
 
 # delete a RSS feed as well as all news items from that feed
 get '/delete_feed' => sub {
-    my $self = shift;
+    my $self    = shift;
     my $feed_id = $self->param('feed_id');
 
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
@@ -349,7 +345,7 @@ get '/delete_feed' => sub {
 # and because the title is used to determine if we already downloaded an
 # existing news item
 get '/cleanup' => sub {
-    my $self = shift;
+    my $self      = shift;
     my $days_back = $self->param('days_back');
 
     # find the datetime stamp some number of days back
@@ -565,13 +561,13 @@ __DATA__
         </style>
     </head>
     <body>
-		%= include 'header'
+        %= include 'header'
         % foreach my $row ( @$feed_rows ) {
 			% my ($row_feed_id, $row_feed_name) = @$row;
 			% $row_feed_name =~ s/\./ /g;
 			<div class='feedlink'><a href='/view_news/<%= $row_feed_id %>/<%= $row_feed_name %>'><%= $row_feed_name %></a></div><br>
         % }
-		%= include 'footer'
+        %= include 'footer'
     </body>
 </html>
 
@@ -679,7 +675,7 @@ __DATA__
             % $counter++;
         % }
         </table>
-		%= include 'footer'
+        %= include 'footer'
     </body>
 </html>
 
@@ -794,7 +790,7 @@ __DATA__
         </style>
     </head>    
     <body>
-		%= include 'header'
+        %= include 'header'
         <p />
         <table>
         % foreach my $row ( @$edit_rows ) {
@@ -817,7 +813,7 @@ __DATA__
             </tr>
         % }
         </table>
-		%= include 'footer'
+        %= include 'footer'
     </body>
 </html>
 
@@ -832,7 +828,7 @@ __DATA__
         </style>
     </head>
     <body>
-		%= include 'header'
+        %= include 'header'
         <form action="<%=url_for('/add_feeds')->to_abs%>" method="post">
         Feed Name: <input type="text" name="feed_name">
         <br> 
@@ -1052,7 +1048,7 @@ a:visited { color:white }
         </style>
     </head>
     <body>
-		%= include 'header'
+        %= include 'header'
         
         <div class='column'>
             <fieldset>
@@ -1118,11 +1114,11 @@ Single user, PostgreSQL backed, Mojolicious based RSS news aggregator
 
 =head1 DESCRIPTION
 
-This is a single user RSS news aggregator that was created after Google closed down Reader.
+This is a web based single user RSS news aggregator that was created after Google closed down Reader.
 
 =head1 README
 
-This reader was written against Mojolicous 4.72 but probably will work against older and newer versions as this script uses a very small portion of Mojolicious' capability.
+This is a web based RSS news aggregator designed for a single user.  It uses Mojolicious as a web framework and PostgreSQL has its database.  The interface is mobile friendly.  It does not require any extra web server as it can be used with Mojolicious' hypnotoad web server.  I currently run this script under OpenBSD 5.2 but there should be no problems with running it under Linux or other BSDs.
 
 I used Google Reader quite a bit but when they closed it down I decided to write my own version.  This is the result of that desire.  I specifically wrote it for me and have not put any multi-user capability into the script.
 
@@ -1276,6 +1272,10 @@ When you start the application it will automatically create the table spaces and
 =item utf8
 
 =back
+
+=head1 SCRIPT CATEGORIES
+
+Web
 
 =head1 AUTHOR
 
