@@ -1239,7 +1239,7 @@ Make sure the PostgreSQL database server is already running.
 
 Once you have made the necessary configuration changes you will want to start this script like so:
 
-C<<< # hypnotoad -f rss-1.0.pl >>>
+C<<< # hypnotoad -f rss.pl >>>
 
 Now point your browser to the IP address and port your configured.
 
