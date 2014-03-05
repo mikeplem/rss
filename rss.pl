@@ -46,12 +46,12 @@ my %months = (
     Oct => '09', Nov => '10', Dec => '11'
 );
 
-my $pg_db = "DBNAME";   # database name
+my $pg_db = "DBNAME"; # database name
 my $user  = "DBUSER"; # database username
 my $pass  = "DBPASS"; # database user password
 
 # database connection
-my $dbh = DBI->connect("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+my $dbh = DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 $dbh->{RaiseError}     = 1;
 $dbh->{PrintError}     = 0;
 $dbh->{pg_enable_utf8} = 1;
@@ -71,6 +71,8 @@ helper create_tables => sub {
     my $self = shift;
 
 	warn "    Creating rss tables\n";
+	
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 	
     $self->db->do(
         'create table if not exists rss_feeds (feed_id serial primary key, feed_name text, feed_url text)'
@@ -102,6 +104,8 @@ helper check_tables => sub {
 
     warn "    Checking if the tables exist\n";
     
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+    
     my $ret = $self->db->prepare("select count(*) from pg_class where relname='rss_feeds'");
     $ret->execute();
     my @count = $ret->fetchrow_array();
@@ -114,6 +118,8 @@ helper check_tables => sub {
 # to view
 helper select_feeds => sub {
     my $self = shift;
+
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 
 	my $get_feeds = $self->db->prepare('
 		    select
@@ -153,6 +159,8 @@ helper select_news => sub {
     my $self        = shift;
 	my $rss_feed_id = shift;
 	
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+	
 	my $get_news = $self->db->prepare('
 		select
 			rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
@@ -174,6 +182,8 @@ helper select_news => sub {
 helper select_favs => sub {
     my $self = shift;
 	
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+	
 	my $get_favs = $self->db->prepare('
     select
         rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
@@ -194,6 +204,8 @@ helper select_favs => sub {
 # SQL query to list all the RSS feeds
 helper edit_feed_list => sub {
     my $self = shift;
+	
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 	
 	my $get_feeds = $self->db->prepare('
 		select
@@ -279,6 +291,8 @@ get '/add_feeds' => sub {
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
     
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+    
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
     
@@ -295,6 +309,8 @@ get '/update_news' => sub {
     my $feed_id     = $self->param('feed_id');
     my $feed_update = $self->param('feed_type');
     my $update;
+
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 
     if ( $feed_update eq "seen" ) {
         $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
@@ -320,6 +336,8 @@ get '/update_feed' => sub {
     my $feed_id  = $self->param('feed_id');
     my $feed_url = $self->param('feed_url');
 
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
     
     $update->execute($feed_url, $feed_id);
@@ -331,6 +349,8 @@ get '/update_feed' => sub {
 get '/delete_feed' => sub {
     my $self    = shift;
     my $feed_id = $self->param('feed_id');
+
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
@@ -354,6 +374,8 @@ get '/cleanup' => sub {
     $current_time -= ( $days_back * ONE_DAY );
     my $remove_date = $current_time->datetime;
 
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+
     my $remove_old_news = $self->db->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
    
@@ -372,6 +394,8 @@ get '/add_news' => sub {
     
     print "\n---------------------\n" if $debug;
     print "Adding news\n\n" if $debug;
+    
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
     
     # read in the SQL offset if one exists so we
     # only read 10 feeds at a time.  if no offset
