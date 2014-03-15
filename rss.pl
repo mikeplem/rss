@@ -220,6 +220,15 @@ helper edit_feed_list => sub {
 	return $get_feeds->fetchall_arrayref;
 };
 
+helper add_news_feed => sub {
+    my $self = shift;
+    my $feed_name = shift;
+    my $feed_url  = shift;
+    
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+    my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
+    $insert_feed->execute($feed_name, $feed_url);
+};
 
 # if the index does not exist then create the tables
 # else just run the select feeds helper
@@ -290,11 +299,12 @@ get '/add_feeds' => sub {
     my $self      = shift;
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
+
+    # DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");    
+    # my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
+    # $insert_feed->execute($feed_name, $feed_url);
     
-    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-    
-    my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
-    $insert_feed->execute($feed_name, $feed_url);
+    $self->add_news_feed($feed_name, $feed_url);
     
     return $self->render(text => 'done', status => 200);
 };
