@@ -207,12 +207,7 @@ helper edit_feed_list => sub {
 	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 	
 	my $get_feeds = $self->db->prepare('
-		select
-			feed_id, feed_name, feed_url
-		from
-			rss_feeds
-		order by
-			feed_name asc
+		select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
 		');
 		
     $get_feeds->execute();
@@ -225,8 +220,63 @@ helper add_news_feed => sub {
     my $feed_url  = shift;
     
 	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-    my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
+    my $insert_feed = $self->db->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
+};
+
+helper update_news_item => sub {
+    my $self        = shift;
+    my $feed_id     = $self->param('feed_id');
+    my $feed_update = $self->param('feed_update');
+    my $update;
+    
+	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+
+    if ( $feed_update eq "seen" ) {
+        $update = $self->db->prepare('update rss_news set news_seen = 1 where news_id = ?');
+    } elsif ( $feed_update eq "seen_all" ) {
+        $update = $self->db->prepare('update rss_news set news_seen = 1 where feed_id = ?');
+    } elsif ( $feed_update eq "fav" ) {
+        $update = $self->db->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
+    } elsif ( $feed_update eq "unfav" ) {
+        $update = $self->db->prepare('update rss_news set news_fav = 0 where news_id = ?');
+    }
+    
+    $update->execute($feed_id);
+};
+
+helper update_feed_item => sub {
+    my $self        = shift;
+    my $feed_id  = $self->param('feed_id');
+    my $feed_url = $self->param('feed_url');
+    
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+    
+    my $update = $self->db->prepare('update rss_feeds set feed_url = ? where feed_id = ?');    
+    $update->execute($feed_url, $feed_id);
+};
+
+helper delete_news => sub {
+    my $self    = shift;
+    my $feed_id = $self->param('feed_id');
+
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+
+    my $delete_feed = $self->db->prepare('delete from rss_feeds where feed_id = ?');
+    $delete_feed->execute($feed_id);
+
+    my $delete_news = $self->db->prepare('delete from rss_news where feed_id = ?');
+    $delete_news->execute($feed_id);
+};
+
+helper cleanup_news => sub {
+    my $self      = shift;
+    my $remove_date = $self->param('remove_date');
+
+    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
+
+    my $remove_old_news = $self->db->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
+    $remove_old_news->execute($remove_date);	
 };
 
 # if the index does not exist then create the tables
@@ -299,12 +349,7 @@ get '/add_feeds' => sub {
     my $feed_name = $self->param('feed_name');
     my $feed_url  = $self->param('feed_url');
 
-    # DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");    
-    # my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
-    # $insert_feed->execute($feed_name, $feed_url);
-    
     $self->add_news_feed($feed_name, $feed_url);
-    
     return $self->render(text => 'done', status => 200);
 };
 
@@ -317,26 +362,9 @@ get '/update_news' => sub {
     my $self        = shift;
     my $feed_id     = $self->param('feed_id');
     my $feed_update = $self->param('feed_type');
-    my $update;
 
-    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-
-    if ( $feed_update eq "seen" ) {
-        $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
-    } elsif ( $feed_update eq "seen_all" ) {
-        $update = $dbh->prepare('update rss_news set news_seen = 1 where feed_id = ?');
-    } elsif ( $feed_update eq "fav" ) {
-        $update = $dbh->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
-    } elsif ( $feed_update eq "unfav" ) {
-        $update = $dbh->prepare('update rss_news set news_fav = 0 where news_id = ?');
-    } else {
-        print "an expected news_type was not provided\n";
-        return $self->render(text => 'failed news_type', status => 500);
-    }
-    
-    $update->execute($feed_id);    
+    $self->update_news_item($feed_id, $feed_update);
     return $self->render(text => 'done', status => 200);
-    
 };
 
 # update a RSS feed URL
@@ -345,13 +373,8 @@ get '/update_feed' => sub {
     my $feed_id  = $self->param('feed_id');
     my $feed_url = $self->param('feed_url');
 
-    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-
-    my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');
-    
-    $update->execute($feed_url, $feed_id);
-    return $self->render(text => 'done', status => 200);
-    
+    $self->update_feed_item($feed_url, $feed_id);
+    return $self->render(text => 'done', status => 200);    
 };
 
 # delete a RSS feed as well as all news items from that feed
@@ -359,14 +382,7 @@ get '/delete_feed' => sub {
     my $self    = shift;
     my $feed_id = $self->param('feed_id');
 
-    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-
-    my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
-    $delete_feed->execute($feed_id);
-
-    my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
-    $delete_news->execute($feed_id);
-    
+    $self->delete_news($feed_id);    
     return $self->render(text => 'done', status => 200);
 };
 
@@ -383,11 +399,7 @@ get '/cleanup' => sub {
     $current_time -= ( $days_back * ONE_DAY );
     my $remove_date = $current_time->datetime;
 
-    DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
-
-    my $remove_old_news = $self->db->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
-    $remove_old_news->execute($remove_date);
-   
+    $self->cleanup_news($remove_date);   
     return $self->render(text => 'done', status => 200);
 };
 
@@ -576,7 +588,7 @@ get '/add_news' => sub {
 };
 
 # when the user wants to add a feed they need to start here
-get '/add_feed' => 'add_feed';
+#get '/add_feed' => 'add_feed';
 
 app->start;
 
