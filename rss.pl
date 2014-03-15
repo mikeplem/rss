@@ -31,19 +31,18 @@ $mon  = $mon + 1;
 $mon  = "0" . $mon if $mon < 10;
 $year = $year + 1900;
 
+my %months = (
+    Jan => '00', Feb => '01', Mar => '02',
+    Apr => '03', May => '04', Jun => '05',
+    Jul => '06', Aug => '07', Sep => '08',
+    Oct => '09', Nov => '10', Dec => '11'
+);
 
 # hypnotoad IP address and port to listen
 app->config(
     hypnotoad => {
         listen => ['http://IPADDRESS:PORT'],
     }
-);
-
-my %months = (
-    Jan => '00', Feb => '01', Mar => '02',
-    Apr => '03', May => '04', Jun => '05',
-    Jul => '06', Aug => '07', Sep => '08',
-    Oct => '09', Nov => '10', Dec => '11'
 );
 
 my $pg_db = "DBNAME"; # database name
