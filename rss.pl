@@ -11,7 +11,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.2";
+our $VERSION = "1.3";
 
 # turn off buffering
 $| = 1;
@@ -215,7 +215,7 @@ helper edit_feed_list => sub {
 };
 
 helper add_news_feed => sub {
-    my $self = shift;
+    my $self      = shift;
     my $feed_name = shift;
     my $feed_url  = shift;
     
@@ -226,8 +226,8 @@ helper add_news_feed => sub {
 
 helper update_news_item => sub {
     my $self        = shift;
-    my $feed_id     = $self->param('feed_id');
-    my $feed_update = $self->param('feed_update');
+    my $feed_id     = shift;
+    my $feed_update = shift;
     my $update;
     
 	DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
@@ -246,9 +246,9 @@ helper update_news_item => sub {
 };
 
 helper update_feed_item => sub {
-    my $self        = shift;
-    my $feed_id  = $self->param('feed_id');
-    my $feed_url = $self->param('feed_url');
+    my $self     = shift;
+    my $feed_id  = shift;
+    my $feed_url = shift;
     
     DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
     
@@ -258,7 +258,7 @@ helper update_feed_item => sub {
 
 helper delete_news => sub {
     my $self    = shift;
-    my $feed_id = $self->param('feed_id');
+    my $feed_id = shift;
 
     DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 
@@ -270,8 +270,8 @@ helper delete_news => sub {
 };
 
 helper cleanup_news => sub {
-    my $self      = shift;
-    my $remove_date = $self->param('remove_date');
+    my $self        = shift;
+    my $remove_date = shift;
 
     DBI->connect_cached("dbi:Pg:dbname=$pg_db", "$user", "$pass");
 
@@ -586,9 +586,6 @@ get '/add_news' => sub {
     }
 
 };
-
-# when the user wants to add a feed they need to start here
-#get '/add_feed' => 'add_feed';
 
 app->start;
 
