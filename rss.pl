@@ -11,7 +11,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.3";
+our $VERSION = "1.4";
 
 # turn off buffering
 $| = 1;
@@ -1310,6 +1310,8 @@ When you start the application it will automatically create the table spaces and
 =item DateTime
 
 =item DBI
+
+=item DBD::Pg
 
 =item utf8
 
