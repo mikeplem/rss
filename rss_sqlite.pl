@@ -39,11 +39,11 @@ my %months = (
 );
 
 # hypnotoad IP address and port to listen
-# app->config(
-    # hypnotoad => {
-        # listen => ['http://IPADDRESS:PORT'],
-    # }
-# );
+app->config(
+    hypnotoad => {
+        listen => ['http://IPADDRESS:PORT'],
+    }
+);
 
 my $db_file = 'rss.db';
 
