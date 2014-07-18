@@ -5,13 +5,12 @@ use Mojo::UserAgent;
 use HTML::FormatText;
 use Time::Piece;
 use Time::Seconds;
-use Time::HiRes qw(usleep);
 use XML::Feed;
 use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 
 # turn off buffering
 $| = 0;
@@ -19,9 +18,6 @@ $| = 0;
 # if the user wants to see extra debugging text
 # set this value to 1
 my $debug = 0;
-
-# if the user wants to see SQL tracing set this value to 1
-my $sql_debug = 0;
 
 my $now_time = localtime();
 
@@ -39,45 +35,57 @@ my %months = (
 );
 
 # hypnotoad IP address and port to listen
-app->config(
+app->config (
     hypnotoad => {
         listen => ['http://IPADDRESS:PORT'],
+        pid_file => 'rss.pid'
     }
 );
 
-my $db_file = 'rss.db';
-
-# database connection
-my $dbh = DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
-$dbh->{RaiseError}     = 1;
-$dbh->{PrintError}     = 0;
-$dbh->{sqlite_unicode} = 1;
-# turn on write ahead logging to help with performance - if necessary
-#$dbh->do("PRAGMA journal_mode=WAL;");
-
-# add database tracing - SQL or DBD
-if ( $sql_debug ) {
-    $dbh->trace('SQL', 'sql_trace.log');
-}
+# setup the database connection
+app->attr (
+    dbh => sub {
+        my $self        = shift;
+        
+        my $data_source = "dbi:SQLite:dbname=rss.db";
+        my $db_user     = undef;
+        my $db_pass     = undef;
+        
+        # database connection
+        my $dbh = DBI->connect($data_source, $db_user , $db_pass);
+        
+        $dbh->{RaiseError}     = 1;
+        $dbh->{PrintError}     = 0;
+        $dbh->{sqlite_unicode} = 1;
+        
+        # turn on write ahead logging to help with performance - if necessary
+        # $dbh->do("PRAGMA journal_mode=WAL;");
+        
+        return $dbh;
+    }
+);
 
 # ------------- NEWS HELPER FUNCTIONS -------------
 
-# setup a help to the database handle
-helper db => sub { $dbh };
-
+# a debug helper
+helper debug => sub {
+    my ($self, $message) = @_;
+    $self->app->log->debug($message);
+};
+    
 # create the database
 helper create_tables => sub {
     my $self = shift;
 
-	warn "    Creating rss tables\n";
+    warn "Creating rss tables\n";
 	
-	DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    my $dbh = $self->app->dbh;
 	
-    $self->db->do(
+    $dbh->do(
         'create table if not exists rss_feeds (feed_id integer primary key, feed_name text, feed_url text)'
     );
         
-    $self->db->do(
+    $dbh->do(
         'create table if not exists rss_news (
             news_id integer primary key, 
             feed_id integer, 
@@ -90,8 +98,8 @@ helper create_tables => sub {
 				)'
     );
     
-    $self->db->do('create index if not exists rss_feeds_idx on rss_feeds (feed_id)');
-    $self->db->do('create index if not exists rss_news_idx on rss_news (news_id, feed_id, news_title)');
+    $dbh->do('create index if not exists rss_feeds_idx on rss_feeds (feed_id)');
+    $dbh->do('create index if not exists rss_news_idx on rss_news (news_id, feed_id, news_title)');
 
 };
 
@@ -102,11 +110,11 @@ helper create_tables => sub {
 helper check_tables => sub {
     my $self = shift;
 
-    warn "    Checking if the tables exist\n";
+    warn "Checking if the tables exist\n";
     
-    DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    my $dbh = $self->app->dbh;
     
-    my $ret = $self->db->prepare("SELECT count(name) FROM sqlite_master WHERE type = 'table' AND name = 'rss_feeds'");
+    my $ret = $dbh->prepare("SELECT count(name) FROM sqlite_master WHERE type = 'table' AND name = 'rss_feeds'");
     $ret->execute();
     my @count = $ret->fetchrow_array();
     return $count[0];
@@ -119,9 +127,9 @@ helper check_tables => sub {
 helper select_feeds => sub {
     my $self = shift;
 
-    DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    my $dbh = $self->app->dbh;
 
-	my $get_feeds = $self->db->prepare('
+    my $get_feeds = $dbh->prepare('
 		    select
 			    rf.feed_id, rf.feed_name
 		    from
@@ -157,20 +165,20 @@ helper select_feeds => sub {
 # do not show any fav'ed news items
 helper select_news => sub {
     my $self        = shift;
-	my $rss_feed_id = shift;
+    my $rss_feed_id = shift;
 	
-	DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    my $dbh = $self->app->dbh;
 	
-	my $get_news = $self->db->prepare('
-		select
-			rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
-		from
-			rss_feeds rf, rss_news rn
-		where
-			rn.feed_id = ? and rf.feed_id = ?
-			and rn.news_seen = 0
-		order by
-			rn.news_date desc
+    my $get_news = $dbh->prepare('
+        select
+            rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
+        from
+            rss_feeds rf, rss_news rn
+        where
+            rn.feed_id = ? and rf.feed_id = ?
+            and rn.news_seen = 0
+        order by
+            rn.news_date desc
     ');
 
 	$get_news->execute($rss_feed_id, $rss_feed_id);
@@ -182,9 +190,9 @@ helper select_news => sub {
 helper select_favs => sub {
     my $self = shift;
 	
-		DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+		my $dbh = $self->app->dbh;
 	
-	my $get_favs = $self->db->prepare('
+    my $get_favs = $dbh->prepare('
     select
         rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
     from
@@ -196,23 +204,36 @@ helper select_favs => sub {
         rn.news_date desc
     ');
 
-	$get_favs->execute();
-	return $get_favs->fetchall_arrayref;
+    $get_favs->execute();
+    return $get_favs->fetchall_arrayref;
 	
+};
+
+# Get the current count of feeds in the database
+helper count_feeds => sub {
+    my $self = shift;
+	
+		my $dbh = $self->app->dbh;
+
+    my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
+    $feed_count->execute();
+    my @count = $feed_count->fetchrow_array();
+    return $count[0];
+    
 };
 
 # SQL query to list all the RSS feeds
 helper edit_feed_list => sub {
     my $self = shift;
 	
-	DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    my $dbh = $self->app->dbh;
 	
-	my $get_feeds = $self->db->prepare('
+    my $get_feeds = $dbh->prepare('
 		select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
 		');
 		
     $get_feeds->execute();
-	return $get_feeds->fetchall_arrayref;
+    return $get_feeds->fetchall_arrayref;
 };
 
 helper add_news_feed => sub {
@@ -220,8 +241,8 @@ helper add_news_feed => sub {
     my $feed_name = shift;
     my $feed_url  = shift;
     
-    DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
-    my $insert_feed = $self->db->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
+    my $dbh = $self->app->dbh;
+    my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
 };
 
@@ -231,16 +252,16 @@ helper update_news_item => sub {
     my $feed_update = shift;
     my $update;
     
-		DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+		my $dbh = $self->app->dbh;
 
     if ( $feed_update eq "seen" ) {
-        $update = $self->db->prepare('update rss_news set news_seen = 1 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
     } elsif ( $feed_update eq "seen_all" ) {
-        $update = $self->db->prepare('update rss_news set news_seen = 1 where feed_id = ?');
+        $update = $dbh->prepare('update rss_news set news_seen = 1 where feed_id = ?');
     } elsif ( $feed_update eq "fav" ) {
-        $update = $self->db->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_fav = 1, news_seen = 1 where news_id = ?');
     } elsif ( $feed_update eq "unfav" ) {
-        $update = $self->db->prepare('update rss_news set news_fav = 0 where news_id = ?');
+        $update = $dbh->prepare('update rss_news set news_fav = 0 where news_id = ?');
     }
     
     $update->execute($feed_id);
@@ -251,9 +272,9 @@ helper update_feed_item => sub {
     my $feed_id  = shift;
     my $feed_url = shift;
     
-		DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+		my $dbh = $self->app->dbh;
     
-    my $update = $self->db->prepare('update rss_feeds set feed_url = ? where feed_id = ?');    
+    my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');    
     $update->execute($feed_url, $feed_id);
 };
 
@@ -261,15 +282,15 @@ helper delete_news => sub {
     my $self    = shift;
     my $feed_id = shift;
 
-		DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+		my $dbh = $self->app->dbh;
 		
-    my $delete_feed = $self->db->prepare('delete from rss_feeds where feed_id = ?');
+    my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
 
-    my $delete_news = $self->db->prepare('delete from rss_news where feed_id = ?');
+    my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
     
-    my $vacuum = $self->db->prepare('vacuum');
+    my $vacuum = $dbh->prepare('vacuum');
     $vacuum->execute;
     
 };
@@ -278,9 +299,9 @@ helper cleanup_news => sub {
     my $self        = shift;
     my $remove_date = shift;
 
-		DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+		my $dbh = $self->app->dbh;
 		
-    my $remove_old_news = $self->db->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
+    my $remove_old_news = $dbh->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);	
 };
 
@@ -295,11 +316,11 @@ app->select_feeds;
 
 # this route will show the RSS feeds
 any '/' => sub {
-	my $self = shift;
+    my $self = shift;
 	
-	my $rows = $self->select_feeds;
-	$self->stash( feed_rows => $rows );
-	$self->render('list_feeds');
+    my $rows = $self->select_feeds;
+    $self->stash( feed_rows => $rows );
+    $self->render('list_feeds');
 };
 
 # show the list of news from the feed
@@ -312,27 +333,27 @@ get '/view_news/:feed/:name' => sub {
     
     my $news_rows = $self->select_news($news_id);
     $self->stash(news_rows => $news_rows);
-    $self->stash(news_id => $news_id);
+    $self->stash(news_id   => $news_id);
     $self->stash(news_name => $news_name);    
     $self->render('rss');
 };
 
 # show the news items the user chose to favorite
 get '/favs' => sub {
-	my $self = shift;
+    my $self = shift;
 	
-	my $rows = $self->select_favs;
-	$self->stash( fav_rows => $rows );
-	$self->render('favs');
+    my $rows = $self->select_favs;
+    $self->stash( fav_rows => $rows );
+    $self->render('favs');
 };
 
 # edit the RSS feed list
 get '/edit_feeds' => sub {
-	my $self = shift;
+    my $self = shift;
 	
-	my $rows = $self->edit_feed_list;
-	$self->stash( edit_rows => $rows );
-	$self->render('edit_feeds');
+    my $rows = $self->edit_feed_list;
+    $self->stash( edit_rows => $rows );
+    $self->render('edit_feeds');
 };
 
 # show the page that will allow the user to
@@ -340,11 +361,11 @@ get '/edit_feeds' => sub {
 # 2. edit RSS feeds
 # 3. delete RSS news items  that have not be fav'ed
 get '/maint_feeds' => sub {
-	my $self = shift;
+    my $self = shift;
 	
-	my $rows = $self->edit_feed_list;
-	$self->stash( edit_rows => $rows );
-	$self->render('maint');
+    my $rows = $self->edit_feed_list;
+    $self->stash( edit_rows => $rows );
+    $self->render('maint');
 };
 
 
@@ -418,32 +439,26 @@ get '/add_news' => sub {
     
     my $self = shift;
     
-    print "\n---------------------\n" if $debug;
-    print "Adding news\n\n" if $debug;
-    
-    DBI->connect_cached("dbi:SQLite:dbname=$db_file","","");
+    $self->debug('------------------------') if $debug;
+
+    my $dbh = $self->app->dbh;
     
     # read in the SQL offset if one exists so we
     # only read 10 feeds at a time.  if no offset
     # is provided then start at 0
     my $offset = $self->param('offset') // 0;
-   
-    # get the total number of feeds we have so we know when
-    # to stop the recursive call to add_news
-    my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
-    $feed_count->execute();
-    my @num_feeds = $feed_count->fetchrow_array();
+    $self->debug ("offset = $offset") if $debug;
     
-    # create the number of feeds to use as a stopping point
-    # with the recursive call.  this number is the break
-    # out of the loop count
-    my $total_feeds = $num_feeds[0];
+    # get the total number of feeds we have and then add 10 to it
+    # so that we can create the fail condition when there are no
+    # more feeds left
+    my $total_feeds = $self->count_feeds;
     $total_feeds += 10;
     
     # get the feeds to update 10 at a time
     my $get_feeds = $dbh->prepare("select feed_id, feed_name, feed_url from rss_feeds LIMIT 10 OFFSET ?");
     $get_feeds->execute($offset);
-
+    
     # setup the offset for the next call if there is one
     if ( $offset == 0 ) {
         $offset = 10;
@@ -451,32 +466,30 @@ get '/add_news' => sub {
         $offset += 10;
     }
 
-    # prepare queries for instering news and also finding items that may already exist in the database
+    # prepare queries for inserting news and also finding items that may already exist in the database
     my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
     my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
-    
+
     # iterate over each RSS feed
     while ( my @feed_data = $get_feeds->fetchrow_array() ) {
-        
+
         my $rss_id   = $feed_data[0];
         my $rss_name = $feed_data[1];
         my $rss_url  = $feed_data[2];
         
-        print "$rss_name - head request\n" if $debug;
+        $self->debug("$rss_name - head request") if $debug;
 
         # check that the URL exists by doing a HEAD against the URL
         # if there is a problem access a feed skip to the next feed
         my $ua = Mojo::UserAgent->new;
         if ( ! defined $ua ) {
-            print "\tUA not defined\n" if $debug;
-            usleep(250);
+            $self->debug("UA not defined") if $debug;
             next;
         }
 
         my $tx = $ua->head($rss_url);
         if ( ! defined $tx ) {
-            print "\thead request failed\n" if $debug;
-            usleep(250);
+            $self->debug("head request failed") if $debug;
             next;
         }
 
@@ -489,11 +502,11 @@ get '/add_news' => sub {
             # feed_id, news_date, news_title, news_desc, news_url
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
-            print "\tskipping\n" if $debug;
+            $self->debug("skipping") if $debug;
             next;
         }
 
-        print "\tAbout to parse the RSS URL - $rss_url\n" if $debug;
+        $self->debug("About to parse the RSS URL - $rss_url") if $debug;
 
         # Attempt to get the RSS feed.  If it works save it to $feed
         # otherwise skip to the next feed
@@ -504,17 +517,16 @@ get '/add_news' => sub {
         };
         
         if ( $@ ) {
-            print "There was a problem parsing $rss_url\n";
+            $self->debug("There was a problem parsing $rss_url") if $debug;
             next;
         }
             
         if ( ! defined $feed ) {
-            print "\tCannot parse $rss_url - $rss_url\n";
-            usleep(250);
+            $self->debug("Cannot parse $rss_url - $rss_url") if $debug;
             next;
         }
 
-        print "\tURL parsed\n" if $debug;
+        $self->debug("URL parsed") if $debug;
 
         # iterate over each news item of the RSS feed
         foreach my $story ($feed->entries) {
@@ -562,8 +574,6 @@ get '/add_news' => sub {
             my $desc_string = HTML::FormatText->format_string($desc);
             $desc_string =~ s/\[IMAGE\]//g;
             $desc_string =~ s/\s+$/\n\n/;
-            
-            print "\tDoes the title exist?\n" if $debug;
 
             # Have we already downloaded this news item?
             # Check by lookin at the RSS news item title
@@ -573,12 +583,12 @@ get '/add_news' => sub {
             # if the article does not exist in the database then add it
             # otherwise skip it
             if ( $count[0] == 0 ) {
-                print "\tAdd news\n" if $debug;
+                $self->debug("Add news") if $debug;
                 $insert_news->execute($rss_id, $date, $title, $desc_string, $url, 0, 0);
             }
             
         } # END foreach my $story ($feed->entries) {
-        
+
     } # END while ( my @feed_data = $get_feeds->fetchrow_array() ) {
 
 
@@ -1236,6 +1246,7 @@ You need to replace IPADDRESS:PORT with the address and port you want the server
 app->config(
     hypnotoad => {
         listen => ['http://IPADDRESS:PORT'],
+        pid_file => 'rss.pid'
     }
 );
 
@@ -1261,8 +1272,6 @@ When you start the application it will automatically create the table spaces and
 =item Time::Piece
 
 =item Time::Seconds
-
-=item Time::HiRes
 
 =item XML::Feed
 
