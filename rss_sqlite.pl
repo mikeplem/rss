@@ -10,7 +10,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.1";
+our $VERSION = "1.2";
 
 # turn off buffering
 $| = 0;
@@ -100,7 +100,8 @@ helper create_tables => sub {
     
     $dbh->do('create index if not exists rss_feeds_idx on rss_feeds (feed_id)');
     $dbh->do('create index if not exists rss_news_idx on rss_news (news_id, feed_id, news_title)');
-
+    $dbh->finish();
+    
 };
 
 # Check if the the first table exists
@@ -117,6 +118,8 @@ helper check_tables => sub {
     my $ret = $dbh->prepare("SELECT count(name) FROM sqlite_master WHERE type = 'table' AND name = 'rss_feeds'");
     $ret->execute();
     my @count = $ret->fetchrow_array();
+    $dbh->finish();
+
     return $count[0];
 
 };
@@ -156,8 +159,11 @@ helper select_feeds => sub {
 			    rf.feed_name asc
 		');
 	
-	$get_feeds->execute();
-	return $get_feeds->fetchall_arrayref;
+    $get_feeds->execute();
+    my $ret_feeds = $get_feeds->fetchall_arrayref;
+    $dbh->finish();
+    
+    return $ret_feeds;
 
 };
 
@@ -181,8 +187,11 @@ helper select_news => sub {
             rn.news_date desc
     ');
 
-	$get_news->execute($rss_feed_id, $rss_feed_id);
-	return $get_news->fetchall_arrayref;
+    $get_news->execute($rss_feed_id, $rss_feed_id);
+    my $ret_select = $get_news->fetchall_arrayref;
+    $dbh->finish();
+    
+    return $ret_select;
 	
 };
 
@@ -190,7 +199,7 @@ helper select_news => sub {
 helper select_favs => sub {
     my $self = shift;
 	
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 	
     my $get_favs = $dbh->prepare('
     select
@@ -205,19 +214,24 @@ helper select_favs => sub {
     ');
 
     $get_favs->execute();
-    return $get_favs->fetchall_arrayref;
-	
+    my $ret_favs = $get_favs->fetchall_arrayref;
+    $dbh->finish();
+    
+    return $ret_favs;
+
 };
 
 # Get the current count of feeds in the database
 helper count_feeds => sub {
     my $self = shift;
 	
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 
     my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
     $feed_count->execute();
     my @count = $feed_count->fetchrow_array();
+    $dbh->finish();
+    
     return $count[0];
     
 };
@@ -233,7 +247,10 @@ helper edit_feed_list => sub {
 		');
 		
     $get_feeds->execute();
-    return $get_feeds->fetchall_arrayref;
+    my $ret_feeds = $get_feeds->fetchall_arrayref;
+    $dbh->finish();
+    
+    return $ret_feeds;
 };
 
 helper add_news_feed => sub {
@@ -244,6 +261,7 @@ helper add_news_feed => sub {
     my $dbh = $self->app->dbh;
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
+    $dbh->finish();
 };
 
 helper update_news_item => sub {
@@ -252,7 +270,7 @@ helper update_news_item => sub {
     my $feed_update = shift;
     my $update;
     
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 
     if ( $feed_update eq "seen" ) {
         $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
@@ -265,6 +283,7 @@ helper update_news_item => sub {
     }
     
     $update->execute($feed_id);
+    $dbh->finish();
 };
 
 helper update_feed_item => sub {
@@ -272,26 +291,30 @@ helper update_feed_item => sub {
     my $feed_id  = shift;
     my $feed_url = shift;
     
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
     
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');    
     $update->execute($feed_url, $feed_id);
+    $dbh->finish();
 };
 
 helper delete_news => sub {
     my $self    = shift;
     my $feed_id = shift;
 
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 		
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
+    $dbh->finish();
 
     my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
+    $dbh->finish();
     
     my $vacuum = $dbh->prepare('vacuum');
     $vacuum->execute;
+    $dbh->finish();
     
 };
 
@@ -299,10 +322,11 @@ helper cleanup_news => sub {
     my $self        = shift;
     my $remove_date = shift;
 
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 		
     my $remove_old_news = $dbh->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
-    $remove_old_news->execute($remove_date);	
+    $remove_old_news->execute($remove_date);
+    $dbh->finish();	
 };
 
 # if the index does not exist then create the tables
@@ -595,6 +619,7 @@ get '/add_news' => sub {
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
     if ( $offset >= $total_feeds ) {
+        $dbh->finish();
         $self->redirect_to('/');        
     } else {
         $self->redirect_to("/add_news?offset=$offset");
