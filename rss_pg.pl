@@ -10,7 +10,7 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.5";
+our $VERSION = "1.6";
 
 # turn off buffering
 $| = 1;
@@ -47,9 +47,9 @@ app->attr (
     dbh => sub {
         my $self = shift;
 
-				my $pg_db   = "DBNAME"; # database name
-				my $db_user = "DBUSER"; # database username
-				my $db_pass = "DBPASS"; # database user password
+	my $pg_db   = "DBNAME"; # database name
+	my $db_user = "DBUSER"; # database username
+	my $db_pass = "DBPASS"; # database user password
 				
         my $data_source = "dbi:Pg:dbname=$pg_db";
         
@@ -76,9 +76,9 @@ helper debug => sub {
 helper create_tables => sub {
     my $self = shift;
 
-	warn "Creating rss tables\n";
-	
-	my $dbh = $self->app->dbh;
+    warn "Creating rss tables\n";
+    
+    my $dbh = $self->app->dbh;
 	
     $dbh->do(
         'create table if not exists rss_feeds (feed_id serial primary key, feed_name text, feed_url text)'
@@ -88,12 +88,13 @@ helper create_tables => sub {
         'create table if not exists rss_news (
             news_id serial primary key, 
             feed_id serial, 
-			news_date text, 
-			news_title text, 
-			news_desc text, 
-			news_url text, 
-			news_seen smallint, 
-			news_fav smallint)'
+	    news_date text, 
+	    news_title text, 
+	    news_desc text, 
+	    news_url text, 
+	    news_seen smallint, 
+	    news_fav smallint
+	)'
     );
     
     $dbh->do('create index rss_feeds_idx on rss_feeds (feed_id)');
@@ -115,6 +116,8 @@ helper check_tables => sub {
     my $ret = $dbh->prepare("select count(*) from pg_class where relname='rss_feeds'");
     $ret->execute();
     my @count = $ret->fetchrow_array();
+    $ret->finish();
+    
     return $count[0];
 
 };
@@ -127,7 +130,7 @@ helper select_feeds => sub {
 
     my $dbh = $self->app->dbh;
 
-	my $get_feeds = $dbh->prepare('
+    my $get_feeds = $dbh->prepare('
 		    select
 			    rf.feed_id, rf.feed_name
 		    from
@@ -154,8 +157,11 @@ helper select_feeds => sub {
 			    rf.feed_name asc
 		');
 	
-	$get_feeds->execute();
-	return $get_feeds->fetchall_arrayref;
+    $get_feeds->execute();
+    my $ret_feeds = $get_feeds->fetchall_arrayref;
+    $get_feeds->finish();
+    
+    return $ret_feeds;
 
 };
 
@@ -163,11 +169,11 @@ helper select_feeds => sub {
 # do not show any fav'ed news items
 helper select_news => sub {
     my $self        = shift;
-	my $rss_feed_id = shift;
+    my $rss_feed_id = shift;
 	
-	my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 	
-	my $get_news = $dbh->prepare('
+    my $get_news = $dbh->prepare('
 		select
 			rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
 		from
@@ -179,8 +185,11 @@ helper select_news => sub {
 			rn.news_date desc
     ');
 
-	$get_news->execute($rss_feed_id, $rss_feed_id);
-	return $get_news->fetchall_arrayref;
+    $get_news->execute($rss_feed_id, $rss_feed_id);
+    my $ret_select = $get_news->fetchall_arrayref;
+    $get_news->finish();
+    
+    return $ret_select;
 	
 };
 
@@ -188,9 +197,9 @@ helper select_news => sub {
 helper select_favs => sub {
     my $self = shift;
 	
-	my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 	
-	my $get_favs = $dbh->prepare('
+    my $get_favs = $dbh->prepare('
     select
         rf.feed_name, rn.news_date, rn.news_title, rn.news_desc, rn.news_url, rn.news_id
     from
@@ -202,8 +211,11 @@ helper select_favs => sub {
         rn.news_date desc
     ');
 
-	$get_favs->execute();
-	return $get_favs->fetchall_arrayref;
+    $get_favs->execute();
+    my $ret_favs = $get_favs->fetchall_arrayref;
+    $get_favs->finish();
+    
+    return $ret_favs;
 	
 };
 
@@ -211,11 +223,13 @@ helper select_favs => sub {
 helper count_feeds => sub {
     my $self = shift;
 	
-		my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 
     my $feed_count = $dbh->prepare("select count(*) from rss_feeds");
     $feed_count->execute();
     my @count = $feed_count->fetchrow_array();
+    $feed_count->finish();
+    
     return $count[0];
     
 };
@@ -224,14 +238,17 @@ helper count_feeds => sub {
 helper edit_feed_list => sub {
     my $self = shift;
 	
-	my $dbh = $self->app->dbh;
-	
-	my $get_feeds = $dbh->prepare('
-		select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
-		');
-		
+    my $dbh = $self->app->dbh;
+
+    my $get_feeds = $dbh->prepare('
+	    select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
+	    ');
+	    
     $get_feeds->execute();
-	return $get_feeds->fetchall_arrayref;
+    my $ret_feeds = $get_feeds->fetchall_arrayref;
+    $get_feeds->finish();
+    
+    return $ret_feeds;
 };
 
 helper add_news_feed => sub {
@@ -239,9 +256,10 @@ helper add_news_feed => sub {
     my $feed_name = shift;
     my $feed_url  = shift;
     
-	my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
     my $insert_feed = $dbh->prepare('insert into rss_feeds (feed_name, feed_url) values (?, ?)');
     $insert_feed->execute($feed_name, $feed_url);
+    $insert_feed->finish();
 };
 
 helper update_news_item => sub {
@@ -250,7 +268,7 @@ helper update_news_item => sub {
     my $feed_update = shift;
     my $update;
     
-	my $dbh = $self->app->dbh;
+    my $dbh = $self->app->dbh;
 
     if ( $feed_update eq "seen" ) {
         $update = $dbh->prepare('update rss_news set news_seen = 1 where news_id = ?');
@@ -263,6 +281,7 @@ helper update_news_item => sub {
     }
     
     $update->execute($feed_id);
+    $update->finish();
 };
 
 helper update_feed_item => sub {
@@ -274,6 +293,7 @@ helper update_feed_item => sub {
     
     my $update = $dbh->prepare('update rss_feeds set feed_url = ? where feed_id = ?');    
     $update->execute($feed_url, $feed_id);
+    $update->finish();
 };
 
 helper delete_news => sub {
@@ -284,9 +304,11 @@ helper delete_news => sub {
 
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
+    $delete_feed->finish();
 
     my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
+    $delete_news->finish();
 };
 
 helper cleanup_news => sub {
@@ -297,6 +319,7 @@ helper cleanup_news => sub {
 
     my $remove_old_news = $dbh->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);	
+    $remove_old_news->finish();
 };
 
 # if the index does not exist then create the tables
@@ -310,11 +333,11 @@ app->select_feeds;
 
 # this route will show the RSS feeds
 any '/' => sub {
-	my $self = shift;
-	
-	my $rows = $self->select_feeds;
-	$self->stash( feed_rows => $rows );
-	$self->render('list_feeds');
+    my $self = shift;
+    
+    my $rows = $self->select_feeds;
+    $self->stash( feed_rows => $rows );
+    $self->render('list_feeds');
 };
 
 # show the list of news from the feed
@@ -334,20 +357,20 @@ get '/view_news/:feed/:name' => sub {
 
 # show the news items the user chose to favorite
 get '/favs' => sub {
-	my $self = shift;
-	
-	my $rows = $self->select_favs;
-	$self->stash( fav_rows => $rows );
-	$self->render('favs');
+    my $self = shift;
+    
+    my $rows = $self->select_favs;
+    $self->stash( fav_rows => $rows );
+    $self->render('favs');
 };
 
 # edit the RSS feed list
 get '/edit_feeds' => sub {
-	my $self = shift;
-	
-	my $rows = $self->edit_feed_list;
-	$self->stash( edit_rows => $rows );
-	$self->render('edit_feeds');
+    my $self = shift;
+    
+    my $rows = $self->edit_feed_list;
+    $self->stash( edit_rows => $rows );
+    $self->render('edit_feeds');
 };
 
 # show the page that will allow the user to
@@ -355,11 +378,11 @@ get '/edit_feeds' => sub {
 # 2. edit RSS feeds
 # 3. delete RSS news items  that have not be fav'ed
 get '/maint_feeds' => sub {
-	my $self = shift;
-	
-	my $rows = $self->edit_feed_list;
-	$self->stash( edit_rows => $rows );
-	$self->render('maint');
+    my $self = shift;
+    
+    my $rows = $self->edit_feed_list;
+    $self->stash( edit_rows => $rows );
+    $self->render('maint');
 };
 
 
@@ -471,19 +494,19 @@ get '/add_news' => sub {
         my $rss_name = $feed_data[1];
         my $rss_url  = $feed_data[2];
         
-				$self->debug("$rss_name - head request") if $debug;
+	$self->debug("$rss_name - head request") if $debug;
 
         # check that the URL exists by doing a HEAD against the URL
         # if there is a problem access a feed skip to the next feed
         my $ua = Mojo::UserAgent->new;
         if ( ! defined $ua ) {
-						$self->debug("UA not defined") if $debug;
+	    $self->debug("UA not defined") if $debug;
             next;
         }
 
         my $tx = $ua->head($rss_url);
         if ( ! defined $tx ) {
-						$self->debug("head request failed") if $debug;
+	    $self->debug("head request failed") if $debug;
             next;
         }
 
@@ -496,11 +519,11 @@ get '/add_news' => sub {
             # feed_id, news_date, news_title, news_desc, news_url
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
-						$self->debug("skipping") if $debug;
+            $self->debug("skipping") if $debug;
             next;
         }
 
-				$self->debug("About to parse the RSS URL - $rss_url") if $debug;
+	$self->debug("About to parse the RSS URL - $rss_url") if $debug;
 
         # Attempt to get the RSS feed.  If it works save it to $feed
         # otherwise skip to the next feed
@@ -511,16 +534,16 @@ get '/add_news' => sub {
         };
         
         if ( $@ ) {
-						$self->debug("There was a problem parsing $rss_url") if $debug;
+	    $self->debug("There was a problem parsing $rss_url") if $debug;
             next;
         }
             
         if ( ! defined $feed ) {
-						$self->debug("Cannot parse $rss_url - $rss_url") if $debug;
+	    $self->debug("Cannot parse $rss_url - $rss_url") if $debug;
             next;
         }
 
-				$self->debug("URL parsed") if $debug;
+	$self->debug("URL parsed") if $debug;
 
         # iterate over each news item of the RSS feed
         foreach my $story ($feed->entries) {
@@ -589,8 +612,16 @@ get '/add_news' => sub {
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
     if ( $offset >= $total_feeds ) {
-        $self->redirect_to('/');        
+        $get_feeds->finish();
+        $insert_news->finish();
+        $find->finish();
+
+        $self->redirect_to('/');
     } else {
+        $get_feeds->finish();
+        $insert_news->finish();
+        $find->finish();
+
         $self->redirect_to("/add_news?offset=$offset");
     }
 
