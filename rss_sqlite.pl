@@ -618,8 +618,16 @@ get '/add_news' => sub {
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
     if ( $offset >= $total_feeds ) {
+        $get_feeds->finish();
+        $insert_news->finish();
+        $find->finish();
+
         $self->redirect_to('/');        
     } else {
+        $get_feeds->finish();
+        $insert_news->finish();
+        $find->finish();
+
         $self->redirect_to("/add_news?offset=$offset");
     }
 
