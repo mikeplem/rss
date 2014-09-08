@@ -17,7 +17,7 @@ $| = 0;
 
 # if the user wants to see extra debugging text
 # set this value to 1
-my $debug = 0;
+my $debug = 1;
 
 my $now_time = localtime();
 
@@ -311,8 +311,12 @@ helper delete_news => sub {
     $delete_news->execute($feed_id);
     $delete_news->finish();
     
-    my $vacuum = $dbh->prepare('vacuum');
-    $vacuum->execute;
+    my $vacuum = $dbh->do('vacuum');
+    if ( ! defined $vacuum ) {
+        warn "vacuum was undefined\n";
+    }
+
+    $self->debug("vacuum clearred $vacuum items") if $debug;
     $vacuum->finish();
     
 };
