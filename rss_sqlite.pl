@@ -89,13 +89,13 @@ helper create_tables => sub {
         'create table if not exists rss_news (
             news_id integer primary key, 
             feed_id integer, 
-						news_date text, 
-						news_title text, 
-						news_desc text, 
-						news_url text, 
-						news_seen integer, 
-						news_fav integer
-				)'
+            news_date text, 
+            news_title text, 
+            news_desc text, 
+            news_url text, 
+            news_seen integer, 
+            news_fav integer
+        )'
     );
     
     $dbh->do('create index if not exists rss_feeds_idx on rss_feeds (feed_id)');
@@ -132,31 +132,31 @@ helper select_feeds => sub {
     my $dbh = $self->app->dbh;
 
     my $get_feeds = $dbh->prepare('
-		    select
-			    rf.feed_id, rf.feed_name
-		    from
-			    rss_feeds rf
-		    where
-			    rf.feed_id in
-				    (select
-					    rfx.feed_id
-				    from
-					    rss_feeds rfx
-				    INTERSECT
-				    select
-					    rn.feed_id
-				    from
-					    rss_news rn
-				    where
-					    rn.news_seen = 0
-				    group by
-					    rn.feed_id
-				    having
-					    count(*) > 0
-				    )
-		    order by
-			    rf.feed_name asc
-		');
+        select
+            rf.feed_id, rf.feed_name
+        from
+            rss_feeds rf
+        where
+            rf.feed_id in
+                (select
+                    rfx.feed_id
+                from
+                    rss_feeds rfx
+                INTERSECT
+                select
+                    rn.feed_id
+                from
+                    rss_news rn
+                where
+                    rn.news_seen = 0
+                group by
+                    rn.feed_id
+                having
+                    count(*) > 0
+                )
+        order by
+            rf.feed_name asc
+        ');
 	
     $get_feeds->execute();
     my $ret_feeds = $get_feeds->fetchall_arrayref;
@@ -242,8 +242,8 @@ helper edit_feed_list => sub {
     my $dbh = $self->app->dbh;
 	
     my $get_feeds = $dbh->prepare('
-		select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
-		');
+            select feed_id, feed_name, feed_url from rss_feeds order by feed_name asc
+            ');
 		
     $get_feeds->execute();
     my $ret_feeds = $get_feeds->fetchall_arrayref;
@@ -532,7 +532,7 @@ get '/add_news' => sub {
         # Check the result code of the HEAD request.  I have found that even when 
         # a 501 is returned the RSS feed may still work.  If a 200 or 501 is not returned
         # then insert a defaul future date bad url message.  This will allow the user to know
-        # there way a problem
+        # there was a problem
         if ( $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
