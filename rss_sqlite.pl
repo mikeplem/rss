@@ -10,14 +10,14 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.3";
+our $VERSION = "1.4";
 
 # turn off buffering
 $| = 0;
 
 # if the user wants to see extra debugging text
 # set this value to 1
-my $debug = 1;
+my $debug = 0;
 
 my $now_time = localtime();
 
@@ -302,7 +302,7 @@ helper delete_news => sub {
     my $feed_id = shift;
 
     my $dbh = $self->app->dbh;
-		
+    
     my $delete_feed = $dbh->prepare('delete from rss_feeds where feed_id = ?');
     $delete_feed->execute($feed_id);
     $delete_feed->finish();
@@ -310,7 +310,7 @@ helper delete_news => sub {
     my $delete_news = $dbh->prepare('delete from rss_news where feed_id = ?');
     $delete_news->execute($feed_id);
     $delete_news->finish();
-    
+
     my $vacuum = $dbh->do('vacuum');
     if ( ! defined $vacuum ) {
         warn "vacuum was undefined\n";
@@ -330,6 +330,15 @@ helper cleanup_news => sub {
     my $remove_old_news = $dbh->prepare("update rss_news set news_desc = NULL where news_date <= ? and news_fav = '0'");
     $remove_old_news->execute($remove_date);
     $remove_old_news->finish();	
+
+    my $vacuum = $dbh->do('vacuum');
+    if ( ! defined $vacuum ) {
+        warn "vacuum was undefined\n";
+    }
+
+    $self->debug("vacuum clearred $vacuum items") if $debug;
+    $vacuum->finish();
+    
 };
 
 # if the index does not exist then create the tables
