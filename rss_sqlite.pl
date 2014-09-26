@@ -2,6 +2,7 @@
 
 use Mojolicious::Lite;
 use Mojo::UserAgent;
+use Mojo::Log;
 use HTML::FormatText;
 use Time::Piece;
 use Time::Seconds;
@@ -10,14 +11,18 @@ use DateTime;
 use DBI;
 use utf8;
 
-our $VERSION = "1.4";
+# load a config file that contains the apps
+# configuration parameters
+my $config = plugin 'Config';
+
+our $VERSION = "1.5";
 
 # turn off buffering
 $| = 0;
 
 # if the user wants to see extra debugging text
 # set this value to 1
-my $debug = 0;
+my $debug = $config->{debug};
 
 my $now_time = localtime();
 
@@ -34,11 +39,15 @@ my %months = (
     Oct => '09', Nov => '10', Dec => '11'
 );
 
-# hypnotoad IP address and port to listen
+# hypnotoad server configuration
 app->config (
     hypnotoad => {
-        listen => ['http://IPADDRESS:PORT'],
-        pid_file => 'rss.pid'
+        listen             => [$config->{ip_address_port}],
+        pid_file           => $config->{pid_file},
+        heartbeat_timeout  => $config->{heartbeat_timeout},
+        heartbeat_interval => $config->{heartbeat_interval},
+        inactivity_timeout => $config->{inactivity_timeout},
+        workers            => $config->{workers},
     }
 );
 
@@ -47,9 +56,9 @@ app->attr (
     dbh => sub {
         my $self        = shift;
         
-        my $data_source = "dbi:SQLite:dbname=rss.db";
-        my $db_user     = undef;
-        my $db_pass     = undef;
+        my $data_source = $config->{data_source};
+        my $db_user     = $config->{data_source_user};
+        my $db_pass     = $config->{data_source_pass};
         
         # database connection
         my $dbh = DBI->connect($data_source, $db_user , $db_pass);
@@ -65,20 +74,27 @@ app->attr (
     }
 );
 
-# ------------- NEWS HELPER FUNCTIONS -------------
+# location for the log to be stored
+my $log_dir = $config->{log_dir};
 
-# a debug helper
-helper debug => sub {
-    my ($self, $message) = @_;
-    $self->app->log->debug($message);
-};
+# if the log directory does not exist then create it
+if ( ! -d $log_dir ) {
+  print "Creating $log_dir directory\n";
+  mkdir $log_dir, 0755 or die "Cannot create $log_dir: $!\n";
+}
+
+# setup Mojo logging to use the log directory we just created
+# default the log level to info
+my $log = Mojo::Log->new (path => "$log_dir/$config->{log_file}", level => $config->{log_level});
+
+# ------------- NEWS HELPER FUNCTIONS -------------
     
 # create the database
 helper create_tables => sub {
     my $self = shift;
 
-    warn "Creating rss tables\n";
-	
+    $log->info("Creating rss tables");
+    
     my $dbh = $self->app->dbh;
 	
     $dbh->do(
@@ -110,7 +126,7 @@ helper create_tables => sub {
 helper check_tables => sub {
     my $self = shift;
 
-    warn "Checking if the tables exist\n";
+    $log->info("Checking if the tables exist");
     
     my $dbh = $self->app->dbh;
     
@@ -313,12 +329,11 @@ helper delete_news => sub {
 
     my $vacuum = $dbh->do('vacuum');
     if ( ! defined $vacuum ) {
-        warn "vacuum was undefined\n";
+        $log->info("delete_news - vacuum was undefined");
     }
-
-    $self->debug("vacuum clearred $vacuum items") if $debug;
-    $vacuum->finish();
-    
+    else {
+        $log->info("delete_news - vacuum clearred $vacuum items") if $debug;
+    }
 };
 
 helper cleanup_news => sub {
@@ -333,11 +348,11 @@ helper cleanup_news => sub {
 
     my $vacuum = $dbh->do('vacuum');
     if ( ! defined $vacuum ) {
-        warn "vacuum was undefined\n";
+        $log->info("cleanup_news - vacuum was undefined");
     }
-
-    $self->debug("vacuum clearred $vacuum items") if $debug;
-    $vacuum->finish();
+    else {
+        $log->info("cleanup_news - vacuum clearred $vacuum items") if $debug;
+    }
     
 };
 
@@ -475,7 +490,7 @@ get '/add_news' => sub {
     
     my $self = shift;
     
-    $self->debug('------------------------') if $debug;
+    $log->info("---------- Start group of feeds ----------") if $debug;
 
     my $dbh = $self->app->dbh;
     
@@ -483,7 +498,8 @@ get '/add_news' => sub {
     # only read 10 feeds at a time.  if no offset
     # is provided then start at 0
     my $offset = $self->param('offset') // 0;
-    $self->debug ("offset = $offset") if $debug;
+    
+    $log->info("offset = $offset") if $debug > 9;
     
     # get the total number of feeds we have and then add 10 to it
     # so that we can create the fail condition when there are no
@@ -501,7 +517,9 @@ get '/add_news' => sub {
     } else {
         $offset += 10;
     }
-
+    
+    $log->info("offset after update = $offset") if $debug > 9;
+    
     # prepare queries for inserting news and also finding items that may already exist in the database
     my $insert_news = $dbh->prepare("insert into rss_news (feed_id,news_date,news_title,news_desc,news_url,news_seen,news_fav) values (?, ?, ?, ?, ?, ?, ?)");
     my $find = $dbh->prepare("select count(*) from rss_news where news_title = ? and feed_id = ?");
@@ -513,19 +531,19 @@ get '/add_news' => sub {
         my $rss_name = $feed_data[1];
         my $rss_url  = $feed_data[2];
         
-        $self->debug("$rss_name - head request") if $debug;
+        $log->info("$rss_name - head request") if $debug;
 
         # check that the URL exists by doing a HEAD against the URL
         # if there is a problem access a feed skip to the next feed
         my $ua = Mojo::UserAgent->new;
         if ( ! defined $ua ) {
-            $self->debug("UA not defined") if $debug;
+            $log->info("    UA not defined") if $debug;
             next;
         }
 
         my $tx = $ua->head($rss_url);
         if ( ! defined $tx ) {
-            $self->debug("head request failed") if $debug;
+            $log->info("    head request failed") if $debug;
             next;
         }
 
@@ -533,16 +551,16 @@ get '/add_news' => sub {
         # a 501 is returned the RSS feed may still work.  If a 200 or 501 is not returned
         # then insert a defaul future date bad url message.  This will allow the user to know
         # there was a problem
-        if ( $tx->res->code !~ /200|501/ ) {
+        if ( defined $tx->res->code && $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
             $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
-            $self->debug("skipping") if $debug;
+            $log->info("    skipping") if $debug;
             next;
         }
 
-        $self->debug("About to parse the RSS URL - $rss_url") if $debug;
+        $log->info("    About to parse the RSS URL - $rss_url") if $debug > 9;
 
         # Attempt to get the RSS feed.  If it works save it to $feed
         # otherwise skip to the next feed
@@ -553,16 +571,16 @@ get '/add_news' => sub {
         };
         
         if ( $@ ) {
-            $self->debug("There was a problem parsing $rss_url") if $debug;
+            $log->info("    There was a problem parsing $rss_url") if $debug;
             next;
         }
             
         if ( ! defined $feed ) {
-            $self->debug("Cannot parse $rss_url - $rss_url") if $debug;
+            $log->info("    Cannot parse $rss_url") if $debug;
             next;
         }
 
-        $self->debug("URL parsed") if $debug;
+        $log->info("    URL parsed") if $debug > 9;
 
         # iterate over each news item of the RSS feed
         foreach my $story ($feed->entries) {
@@ -619,28 +637,35 @@ get '/add_news' => sub {
             # if the article does not exist in the database then add it
             # otherwise skip it
             if ( $count[0] == 0 ) {
-                $self->debug("Add news") if $debug;
+                $log->info("    Adding news") if $debug > 19;
                 $insert_news->execute($rss_id, $date, $title, $desc_string, $url, 0, 0);
+                $log->info("    News added") if $debug > 19;
             }
             
         } # END foreach my $story ($feed->entries) {
 
     } # END while ( my @feed_data = $get_feeds->fetchrow_array() ) {
 
+    $log->info("offset = $offset and total_feeds = $total_feeds") if $debug > 19;
+
+    # finish commands so that we start fresh on the next go around
+    # or when we are done adding news
+
+    $log->info("before query finish") if $debug > 19;
+
+    $get_feeds->finish();
+    $insert_news->finish();
+    $find->finish();
+
+    $log->info("after query finish") if $debug > 19;
 
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
     if ( $offset >= $total_feeds ) {
-        $get_feeds->finish();
-        $insert_news->finish();
-        $find->finish();
-
-        $self->redirect_to('/');        
+        $log->info("about to redirect to /") if $debug > 9;
+        $self->redirect_to('/');
     } else {
-        $get_feeds->finish();
-        $insert_news->finish();
-        $find->finish();
-
+        $log->info("redirect - /add_news?offset=$offset") if $debug > 9;
         $self->redirect_to("/add_news?offset=$offset");
     }
 
@@ -1281,19 +1306,41 @@ To update a RSS feeds URL find the feed in the list fill in the new URL and clic
 
 =head1 CONFIGURATION
 
-No configuration is necessary.  With SQLite as the backend the database will be created at startup.  It will be called rss.db
+SQlite does not require any configuration.  The first time you run the script the database will be created with the proper tables and indices.  The database resides in the same location as the script and it is called rss.db.
 
-=head2 Network Access
+Mojolicious has a built in facility to use configuration files.  I have moved the script to use it so that I no longer need to edit the code when I want to change the IP address or pid file.  With moving to the config file I have added more options for configuration.  Here is the default config file.
 
-You need to replace IPADDRESS:PORT with the address and port you want the server to listen
-
-app->config(
-    hypnotoad => {
-        listen => ['http://IPADDRESS:PORT'],
-        pid_file => 'rss.pid'
-    }
-);
-
+ {
+    # the IP address and port the Hypnotoad server listens
+    ip_address_port => "http://IPADDRESS:PORT",
+    # the datasource of the RSS database
+    # the database file (rss.db) can be an absolute path
+    data_source => "dbi:SQLite:dbname=rss.db",
+    # the username and password to authenticate to the database
+    # in SQLite's case you do not need a username
+    data_source_user => undef, 
+    data_source_pass => undef, 
+    # the PID file hypnotoad will place its running PID
+    # this can be an absolute path
+    pid_file => "rss.pid",
+    # the path and name of the logging directory
+    # this can be an absolute path
+    log_dir => "logs",
+    # the name of the log file stored in log_dir
+    log_file => "rss.log",
+    # the Mojolicious Logging level
+    log_level => 'info',
+    # the application debug level for the log
+    # 0 means no debug logging
+    # 10 means more logging
+    # 20 means even more logging
+    debug => 0,
+    # Mojolicious tuning - the timeout and interval are in seconds
+    heartbeat_timeout => 60,
+    heartbeat_interval => 10,
+    inactivity_timeout => 120,
+    workers => 1,
+};
 
 =head1 RUNNING
 
@@ -1310,6 +1357,8 @@ When you start the application it will automatically create the table spaces and
 =item Mojolicious::Lite
 
 =item Mojo::UserAgent
+
+=item Mojo::Log;
 
 =item HTML::FormatText
 
