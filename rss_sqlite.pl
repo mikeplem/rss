@@ -692,32 +692,24 @@ __DATA__
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
                 }
 
-                xmlhttp.open("GET",url, true);
-                xmlhttp.send();                    
-            }
-            
-            function showActive(feedUpdate) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        document.getElementById('updateButton').disabled = '';
+                        if ( url === "/add_news" ) {
+                            document.getElementById('updateButton').disabled = '';
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = url;
+                        }
                     }
                 }
 
-                if ( feedUpdate == 'yes' ) {
+                if ( url === "/add_news" ) {
                     document.getElementById('updateButton').disabled = 'disabled';
-                    xmlhttp.open("GET","/add_news", true);
-                    xmlhttp.send();                    
                 }
-            }
-            
+
+                xmlhttp.open("GET", url, true);
+                xmlhttp.send();                    
+            }            
         </script>
         <style>
             %= include 'rss_style'
@@ -753,31 +745,24 @@ __DATA__
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
                 }
 
-                xmlhttp.open("GET",url, true);
-                xmlhttp.send();                    
-            }
-            
-            function showActive(feedUpdate) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        document.getElementById('updateButton').disabled = '';
+                        if ( url === "/add_news" ) {
+                            document.getElementById('updateButton').disabled = '';
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = url;
+                        }
                     }
                 }
 
-                if ( feedUpdate == 'yes' ) {
+                if ( url === "/add_news" ) {
                     document.getElementById('updateButton').disabled = 'disabled';
-                    xmlhttp.open("GET","/add_news", true);
-                    xmlhttp.send();                    
                 }
-            }
+
+                xmlhttp.open("GET", url, true);
+                xmlhttp.send();                    
+            }            
             
             function changeState(state, id, link_id) {
                 var xmlhttp;
@@ -896,31 +881,24 @@ __DATA__
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
                 }
 
-                xmlhttp.open("GET",url, true);
-                xmlhttp.send();                    
-            }
-            
-            function showActive(feedUpdate) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        document.getElementById('updateButton').disabled = '';
+                        if ( url === "/add_news" ) {
+                            document.getElementById('updateButton').disabled = '';
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = url;
+                        }
                     }
                 }
 
-                if ( feedUpdate == 'yes' ) {
+                if ( url === "/add_news" ) {
                     document.getElementById('updateButton').disabled = 'disabled';
-                    xmlhttp.open("GET","/add_news", true);
-                    xmlhttp.send();                    
                 }
-            }
+
+                xmlhttp.open("GET", url, true);
+                xmlhttp.send();                    
+            }            
             
             function changeState(state, id, fav_id) {
                 var xmlhttp;
@@ -1028,31 +1006,24 @@ __DATA__
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
                 }
 
-                xmlhttp.open("GET",url, true);
-                xmlhttp.send();                    
-            }
-            
-            function showActive(feedUpdate) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        document.getElementById('updateButton').disabled = '';
+                        if ( url === "/add_news" ) {
+                            document.getElementById('updateButton').disabled = '';
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = url;
+                        }
                     }
                 }
 
-                if ( feedUpdate == 'yes' ) {
+                if ( url === "/add_news" ) {
                     document.getElementById('updateButton').disabled = 'disabled';
-                    xmlhttp.open("GET","/add_news", true);
-                    xmlhttp.send();                    
                 }
-            }
+
+                xmlhttp.open("GET", url, true);
+                xmlhttp.send();                    
+            }            
         </script>        
         <style>
             %= include 'rss_style'
@@ -1112,11 +1083,7 @@ __DATA__
 @@ header.html.ep
 <div style='padding-bottom: 40px;'>
 <ul>
-<!-- <li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li> -->
-<!-- <li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li> -->
-<!-- <li><a href="<%=url_for('/')->to_abs%>">View</a></li> -->
-<!-- <li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li> -->
-<li><button id='updateButton' type="button" onClick="showActive('yes')">Update</button></li>
+<li><button type="button" onClick="goURL('/add_news')">Update</button></li>
 <li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
 <li><button type="button" onClick="goURL('/')">Feed List</button></li>
 <li><button type="button" onClick="goURL('/favs')">Favs</button></li>
@@ -1129,12 +1096,164 @@ __DATA__
 <div class='clear'></div>
 <ul>
 <li><a href='#top'>Top</a></li>
-<li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li>
-<li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li>
-<li><a href="<%=url_for('/')->to_abs%>">Feed List</a></li>
-<li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li>
+<li><button type="button" onClick="goURL('/add_news')">Update</button></li>
+<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
+<li><button type="button" onClick="goURL('/')">Feed List</button></li>
+<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
 </ul>
 <div style='padding-bottom: 40px;'></div>
+
+@@maint.html.ep
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Manage Feeds</title>
+        <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
+        <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        if ( url === "/add_news" ) {
+                            document.getElementById('updateButton').disabled = '';
+                            window.location.href = "/";
+                        } else {
+                            window.location.href = url;
+                        }
+                    }
+                }
+
+                if ( url === "/add_news" ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                }
+
+                xmlhttp.open("GET", url, true);
+                xmlhttp.send();                    
+            }            
+                    
+            function changeState(state, arg_one, arg_two) {
+                var xmlhttp;
+                
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        
+                        if ( state == 'add' ) {
+                            document.getElementById('feedAdd').innerHTML = 'Feed Added';
+                            window.location.reload(true);
+                        } else if ( state == 'clean' ) {
+                            document.getElementById('cleanUp').innerHTML = 'Cleared';
+                            document.getElementById('days_back').value = ''
+                        } else if ( state == 'update' ) {
+                            document.getElementById('feedChange').innerHTML = 'Feed Updated';
+                            window.location.reload(true);
+                        } else if ( state == 'delete' ) {
+                            document.getElementById('feedChange').innerHTML = 'Feed Deleted';
+                            window.location.reload(true);
+                        } else {
+                            alert('Incorrect state provided');
+                        }
+                    }
+                }
+                
+                if ( state == 'add' ) {
+                    
+                    name = document.getElementById('add_feed_name').value;
+                    url = document.getElementById('add_feed_url').value;
+                    
+                    xmlhttp.open("GET","/add_feeds?feed_name=" + name + "&feed_url=" + url, true);
+                    xmlhttp.send();
+                    
+                } else if ( state == 'clean' ) {
+                    
+                    number = document.getElementById('days_back').value;
+                    
+                    xmlhttp.open("GET","/cleanup?days_back=" + number, true);
+                    xmlhttp.send();
+                    
+                } else if ( state == 'update' ) {
+                    
+                    xmlhttp.open("GET","/update_feed?feed_id=" + arg_one + "&feed_url=" + arg_two, true);
+                    xmlhttp.send();
+
+                } else if ( state == 'delete' ) {
+                    
+                    xmlhttp.open("GET","/delete_feed?feed_id=" + arg_one, true);
+                    xmlhttp.send();
+                    
+                }
+            }
+        </script>
+        <style>
+            %= include 'rss_style'
+        </style>
+    </head>
+    <body>
+        %= include 'header'
+        
+        <div class='column'>
+            <fieldset>
+                Feed Name: <input type="text" size='35' id="add_feed_name">
+                <br> 
+                Feed URL: <input type="url" size='35' id="add_feed_url">
+                <br>
+                <button type="button" onClick="changeState('add', '', '')">Add Feed</button>
+                <div id='feedAdd'></div>
+            </fieldset>
+        </div>
+        
+        <div class='column'>
+            <fieldset>
+                Remove older than (days): <input type="number" size='2' id="days_back">
+                <button type="button" onClick="changeState('clean', '', '')">Clean Up</button>
+                <div id='cleanUp'></div>
+            </fieldset>
+        </div>
+        
+        <div class='clear'></div>
+        
+        <div class='column'>
+            <fieldset>
+                <div id='feedChange'></div>
+                <table>
+                % foreach my $row ( @$edit_rows ) {
+                    % my ( $feed_id, $feed_name, $feed_url ) = @$row;
+                    <tr>
+                        <td><%= $feed_name %></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <form class='formWithButtons'>
+                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
+                                <input type='text' size='35' name='feed_url' value='<%= $feed_url %>'>
+                                <button type="button" onClick="changeState('update', '<%= $feed_id %>', '<%= $feed_url %>')">Update</button>
+                            </form>
+                            <form class="formWithButtons">
+                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
+                                <button type="button" onClick="changeState('delete', '<%= $feed_id %>', '')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                % }
+                </table>
+            </div>
+        </fieldset>
+        
+        %= include 'footer'
+    </body>
+</html>
 
 @@ rss_style.html.ep
 @media all and (orientation: portrait) and (max-device-width: 480px) {
@@ -1253,165 +1372,6 @@ tr:nth-child(odd) {
 a:link { color:white }
 a:visited { color:white }
 .formWithButtons { display:inline; }
-
-@@maint.html.ep
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Manage Feeds</title>
-        <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
-        <script>
-            function goURL(url) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
-                xmlhttp.open("GET",url, true);
-                xmlhttp.send();                    
-            }
-            
-            function showActive(feedUpdate) {
-                var xmlhttp;
-
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
-                xmlhttp.onreadystatechange = function() {
-                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        document.getElementById('updateButton').disabled = '';
-                    }
-                }
-
-                if ( feedUpdate == 'yes' ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
-                    xmlhttp.open("GET","/add_news", true);
-                    xmlhttp.send();                    
-                }
-            }
-                    
-            function changeState(state, arg_one, arg_two) {
-                var xmlhttp;
-                
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
-                xmlhttp.onreadystatechange = function() {
-                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        
-                        if ( state == 'add' ) {
-                            document.getElementById('feedAdd').innerHTML = 'Feed Added';
-                            window.location.reload(true);
-                        } else if ( state == 'clean' ) {
-                            document.getElementById('cleanUp').innerHTML = 'Cleared';
-                            document.getElementById('days_back').value = ''
-                        } else if ( state == 'update' ) {
-                            document.getElementById('feedChange').innerHTML = 'Feed Updated';
-                            window.location.reload(true);
-                        } else if ( state == 'delete' ) {
-                            document.getElementById('feedChange').innerHTML = 'Feed Deleted';
-                            window.location.reload(true);
-                        } else {
-                            alert('Incorrect state provided');
-                        }
-                    }
-                }
-                
-                if ( state == 'add' ) {
-                    
-                    name = document.getElementById('add_feed_name').value;
-                    url = document.getElementById('add_feed_url').value;
-                    
-                    xmlhttp.open("GET","/add_feeds?feed_name=" + name + "&feed_url=" + url, true);
-                    xmlhttp.send();
-                    
-                } else if ( state == 'clean' ) {
-                    
-                    number = document.getElementById('days_back').value;
-                    
-                    xmlhttp.open("GET","/cleanup?days_back=" + number, true);
-                    xmlhttp.send();
-                    
-                } else if ( state == 'update' ) {
-                    
-                    xmlhttp.open("GET","/update_feed?feed_id=" + arg_one + "&feed_url=" + arg_two, true);
-                    xmlhttp.send();
-
-                } else if ( state == 'delete' ) {
-                    
-                    xmlhttp.open("GET","/delete_feed?feed_id=" + arg_one, true);
-                    xmlhttp.send();
-                    
-                }
-            }
-        </script>
-        <style>
-            %= include 'rss_style'
-        </style>
-    </head>
-    <body>
-        %= include 'header'
-        
-        <div class='column'>
-            <fieldset>
-                Feed Name: <input type="text" size='35' id="add_feed_name">
-                <br> 
-                Feed URL: <input type="url" size='35' id="add_feed_url">
-                <br>
-                <button type="button" onClick="changeState('add', '', '')">Add Feed</button>
-                <div id='feedAdd'></div>
-            </fieldset>
-        </div>
-        
-        <div class='column'>
-            <fieldset>
-                Remove older than (days): <input type="number" size='2' id="days_back">
-                <button type="button" onClick="changeState('clean', '', '')">Clean Up</button>
-                <div id='cleanUp'></div>
-            </fieldset>
-        </div>
-        
-        <div class='clear'></div>
-        
-        <div class='column'>
-            <fieldset>
-                <div id='feedChange'></div>
-                <table>
-                % foreach my $row ( @$edit_rows ) {
-                    % my ( $feed_id, $feed_name, $feed_url ) = @$row;
-                    <tr>
-                        <td><%= $feed_name %></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <form class='formWithButtons'>
-                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
-                                <input type='text' size='35' name='feed_url' value='<%= $feed_url %>'>
-                                <button type="button" onClick="changeState('update', '<%= $feed_id %>', '<%= $feed_url %>')">Update</button>
-                            </form>
-                            <form class="formWithButtons">
-                                <input type='hidden' name='feed_id' value='<%= $feed_id %>'>
-                                <button type="button" onClick="changeState('delete', '<%= $feed_id %>', '')">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                % }
-                </table>
-            </div>
-        </fieldset>
-        
-        %= include 'footer'
-    </body>
-</html>
 
 __END__
 
