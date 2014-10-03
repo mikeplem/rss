@@ -682,6 +682,43 @@ __DATA__
     <head>
         <title>News Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
+        <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.open("GET",url, true);
+                xmlhttp.send();                    
+            }
+            
+            function showActive(feedUpdate) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        document.getElementById('updateButton').disabled = '';
+                    }
+                }
+
+                if ( feedUpdate == 'yes' ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                    xmlhttp.open("GET","/add_news", true);
+                    xmlhttp.send();                    
+                }
+            }
+            
+        </script>
         <style>
             %= include 'rss_style'
         </style>
@@ -689,9 +726,9 @@ __DATA__
     <body>
         %= include 'header'
         % foreach my $row ( @$feed_rows ) {
-			% my ($row_feed_id, $row_feed_name) = @$row;
-			% $row_feed_name =~ s/\./ /g;
-			<div class='feedlink'><a href='/view_news/<%= $row_feed_id %>/<%= $row_feed_name %>'><%= $row_feed_name %></a></div><br>
+		% my ($row_feed_id, $row_feed_name) = @$row;
+		% $row_feed_name =~ s/\./ /g;
+		<div class='feedlink'><a href='/view_news/<%= $row_feed_id %>/<%= $row_feed_name %>'><%= $row_feed_name %></a></div><br>
         % }
         %= include 'footer'
     </body>
@@ -707,6 +744,41 @@ __DATA__
             %= include 'rss_style'
         </style>
         <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.open("GET",url, true);
+                xmlhttp.send();                    
+            }
+            
+            function showActive(feedUpdate) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        document.getElementById('updateButton').disabled = '';
+                    }
+                }
+
+                if ( feedUpdate == 'yes' ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                    xmlhttp.open("GET","/add_news", true);
+                    xmlhttp.send();                    
+                }
+            }
+            
             function changeState(state, id, link_id) {
                 var xmlhttp;
                 
@@ -815,6 +887,41 @@ __DATA__
             %= include 'rss_style'
         </style>
         <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.open("GET",url, true);
+                xmlhttp.send();                    
+            }
+            
+            function showActive(feedUpdate) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        document.getElementById('updateButton').disabled = '';
+                    }
+                }
+
+                if ( feedUpdate == 'yes' ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                    xmlhttp.open("GET","/add_news", true);
+                    xmlhttp.send();                    
+                }
+            }
+            
             function changeState(state, id, fav_id) {
                 var xmlhttp;
 
@@ -911,6 +1018,42 @@ __DATA__
     <head>
         <title>Edit News Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
+        <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.open("GET",url, true);
+                xmlhttp.send();                    
+            }
+            
+            function showActive(feedUpdate) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        document.getElementById('updateButton').disabled = '';
+                    }
+                }
+
+                if ( feedUpdate == 'yes' ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                    xmlhttp.open("GET","/add_news", true);
+                    xmlhttp.send();                    
+                }
+            }
+        </script>        
         <style>
             %= include 'rss_style'
         </style>
@@ -969,10 +1112,14 @@ __DATA__
 @@ header.html.ep
 <div style='padding-bottom: 40px;'>
 <ul>
-<li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li>
-<li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li>
-<li><a href="<%=url_for('/')->to_abs%>">View</a></li>
-<li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li>
+<!-- <li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li> -->
+<!-- <li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li> -->
+<!-- <li><a href="<%=url_for('/')->to_abs%>">View</a></li> -->
+<!-- <li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li> -->
+<li><button id='updateButton' type="button" onClick="showActive('yes')">Update</button></li>
+<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
+<li><button type="button" onClick="goURL('/')">Feed List</button></li>
+<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
 </ul>
 </div>
 <div class='clear'></div>
@@ -984,7 +1131,7 @@ __DATA__
 <li><a href='#top'>Top</a></li>
 <li><a href="<%=url_for('/add_news')->to_abs%>">Update</a></li>
 <li><a href="<%=url_for('/maint_feeds')->to_abs%>">Manage</a></li>
-<li><a href="<%=url_for('/')->to_abs%>">View</a></li>
+<li><a href="<%=url_for('/')->to_abs%>">Feed List</a></li>
 <li><a href="<%=url_for('/favs')->to_abs%>">Favs</a></li>
 </ul>
 <div style='padding-bottom: 40px;'></div>
@@ -1068,6 +1215,10 @@ fieldset {
     margin-top: .1em;
 }
 
+.update {
+    visibility: hidden;
+}
+
 ul {
     float:left;
     padding:0;
@@ -1099,7 +1250,6 @@ tr:nth-child(odd) {
     background: black;
 }
 
-
 a:link { color:white }
 a:visited { color:white }
 .formWithButtons { display:inline; }
@@ -1111,6 +1261,41 @@ a:visited { color:white }
         <title>Manage Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
         <script>
+            function goURL(url) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.open("GET",url, true);
+                xmlhttp.send();                    
+            }
+            
+            function showActive(feedUpdate) {
+                var xmlhttp;
+
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        document.getElementById('updateButton').disabled = '';
+                    }
+                }
+
+                if ( feedUpdate == 'yes' ) {
+                    document.getElementById('updateButton').disabled = 'disabled';
+                    xmlhttp.open("GET","/add_news", true);
+                    xmlhttp.send();                    
+                }
+            }
+                    
             function changeState(state, arg_one, arg_two) {
                 var xmlhttp;
                 
