@@ -15,7 +15,7 @@ use utf8;
 # configuration parameters
 my $config = plugin 'Config';
 
-our $VERSION = "1.5";
+our $VERSION = "1.6";
 
 # turn off buffering
 $| = 0;
@@ -685,7 +685,7 @@ __DATA__
         <script>
             function goURL(url) {
                 var xmlhttp;
-
+                
                 if (window.XMLHttpRequest) {
                     xmlhttp = new XMLHttpRequest();
                 } else {
@@ -695,7 +695,8 @@ __DATA__
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         if ( url === "/add_news" ) {
-                            document.getElementById('updateButton').disabled = '';
+                            document.getElementById('updateButtonTop').disabled = '';
+                            document.getElementById('updateButtonBot').disabled = '';
                             window.location.href = "/";
                         } else {
                             window.location.href = url;
@@ -704,12 +705,13 @@ __DATA__
                 }
 
                 if ( url === "/add_news" ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
+                    document.getElementById('updateButtonTop').disabled = 'disabled';
+                    document.getElementById('updateButtonBot').disabled = 'disabled';
                 }
 
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
-            }            
+            }
         </script>
         <style>
             %= include 'rss_style'
@@ -738,7 +740,7 @@ __DATA__
         <script>
             function goURL(url) {
                 var xmlhttp;
-
+                
                 if (window.XMLHttpRequest) {
                     xmlhttp = new XMLHttpRequest();
                 } else {
@@ -748,7 +750,8 @@ __DATA__
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         if ( url === "/add_news" ) {
-                            document.getElementById('updateButton').disabled = '';
+                            document.getElementById('updateButtonTop').disabled = '';
+                            document.getElementById('updateButtonBot').disabled = '';
                             window.location.href = "/";
                         } else {
                             window.location.href = url;
@@ -757,12 +760,13 @@ __DATA__
                 }
 
                 if ( url === "/add_news" ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
+                    document.getElementById('updateButtonTop').disabled = 'disabled';
+                    document.getElementById('updateButtonBot').disabled = 'disabled';
                 }
 
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
-            }            
+            }
             
             function changeState(state, id, link_id) {
                 var xmlhttp;
@@ -874,7 +878,7 @@ __DATA__
         <script>
             function goURL(url) {
                 var xmlhttp;
-
+                
                 if (window.XMLHttpRequest) {
                     xmlhttp = new XMLHttpRequest();
                 } else {
@@ -884,7 +888,8 @@ __DATA__
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         if ( url === "/add_news" ) {
-                            document.getElementById('updateButton').disabled = '';
+                            document.getElementById('updateButtonTop').disabled = '';
+                            document.getElementById('updateButtonBot').disabled = '';
                             window.location.href = "/";
                         } else {
                             window.location.href = url;
@@ -893,12 +898,13 @@ __DATA__
                 }
 
                 if ( url === "/add_news" ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
+                    document.getElementById('updateButtonTop').disabled = 'disabled';
+                    document.getElementById('updateButtonBot').disabled = 'disabled';
                 }
 
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
-            }            
+            }
             
             function changeState(state, id, fav_id) {
                 var xmlhttp;
@@ -990,7 +996,6 @@ __DATA__
 </html>
 
 @@ edit_feeds.html.ep
-
 <!DOCTYPE html>
 <html>
     <head>
@@ -999,7 +1004,7 @@ __DATA__
         <script>
             function goURL(url) {
                 var xmlhttp;
-
+                
                 if (window.XMLHttpRequest) {
                     xmlhttp = new XMLHttpRequest();
                 } else {
@@ -1009,7 +1014,8 @@ __DATA__
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         if ( url === "/add_news" ) {
-                            document.getElementById('updateButton').disabled = '';
+                            document.getElementById('updateButtonTop').disabled = '';
+                            document.getElementById('updateButtonBot').disabled = '';
                             window.location.href = "/";
                         } else {
                             window.location.href = url;
@@ -1018,12 +1024,13 @@ __DATA__
                 }
 
                 if ( url === "/add_news" ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
+                    document.getElementById('updateButtonTop').disabled = 'disabled';
+                    document.getElementById('updateButtonBot').disabled = 'disabled';
                 }
 
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
-            }            
+            }
         </script>        
         <style>
             %= include 'rss_style'
@@ -1080,29 +1087,6 @@ __DATA__
     </body>
 </html>
 
-@@ header.html.ep
-<div style='padding-bottom: 40px;'>
-<ul>
-<li><button type="button" onClick="goURL('/add_news')">Update</button></li>
-<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
-<li><button type="button" onClick="goURL('/')">Feed List</button></li>
-<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
-</ul>
-</div>
-<div class='clear'></div>
-
-@@ footer.html.ep
-<p />
-<div class='clear'></div>
-<ul>
-<li><a href='#top'>Top</a></li>
-<li><button type="button" onClick="goURL('/add_news')">Update</button></li>
-<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
-<li><button type="button" onClick="goURL('/')">Feed List</button></li>
-<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
-</ul>
-<div style='padding-bottom: 40px;'></div>
-
 @@maint.html.ep
 <!DOCTYPE html>
 <html>
@@ -1112,7 +1096,7 @@ __DATA__
         <script>
             function goURL(url) {
                 var xmlhttp;
-
+                
                 if (window.XMLHttpRequest) {
                     xmlhttp = new XMLHttpRequest();
                 } else {
@@ -1122,7 +1106,8 @@ __DATA__
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                         if ( url === "/add_news" ) {
-                            document.getElementById('updateButton').disabled = '';
+                            document.getElementById('updateButtonTop').disabled = '';
+                            document.getElementById('updateButtonBot').disabled = '';
                             window.location.href = "/";
                         } else {
                             window.location.href = url;
@@ -1131,12 +1116,13 @@ __DATA__
                 }
 
                 if ( url === "/add_news" ) {
-                    document.getElementById('updateButton').disabled = 'disabled';
+                    document.getElementById('updateButtonTop').disabled = 'disabled';
+                    document.getElementById('updateButtonBot').disabled = 'disabled';
                 }
 
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
-            }            
+            }
                     
             function changeState(state, arg_one, arg_two) {
                 var xmlhttp;
@@ -1254,6 +1240,29 @@ __DATA__
         %= include 'footer'
     </body>
 </html>
+
+@@ header.html.ep
+<div style='padding-bottom: 40px;'>
+<ul>
+<li><button id='updateButtonTop' type="button" onClick="goURL('/add_news')">Update</button></li>
+<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
+<li><button type="button" onClick="goURL('/')">Feed List</button></li>
+<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
+</ul>
+</div>
+<div class='clear'></div>
+
+@@ footer.html.ep
+<p />
+<a href='#top'>Top</a>
+<div class='clear'></div>
+<ul>
+<li><button id='updateButtonBot' type="button" onClick="goURL('/add_news')">Update</button></li>
+<li><button type="button" onClick="goURL('/maint_feeds')">Manage</button></li>
+<li><button type="button" onClick="goURL('/')">Feed List</button></li>
+<li><button type="button" onClick="goURL('/favs')">Favs</button></li>
+</ul>
+<div style='padding-bottom: 40px;'></div>
 
 @@ rss_style.html.ep
 @media all and (orientation: portrait) and (max-device-width: 480px) {
