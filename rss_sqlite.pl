@@ -24,6 +24,9 @@ $| = 0;
 # set this value to 1
 my $debug = $config->{debug};
 
+# the parse RSS feed timeout variable
+my $parse_timeout = $config->{parse_timeout};
+
 my $now_time = localtime();
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -554,7 +557,7 @@ get '/add_news' => sub {
         if ( defined $tx->res->code && $tx->res->code !~ /200|501/ ) {
             
             # feed_id, news_date, news_title, news_desc, news_url
-            $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
+            # $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
             
             $log->info("    skipping") if $debug;
             next;
@@ -566,8 +569,12 @@ get '/add_news' => sub {
         # otherwise skip to the next feed
         my $feed;
         eval {
+            # setup an alarm to skip this process if it takes longer than XX seconds
+            local $SIG{ALRM} = sub { $log->info("    Taking too long, skipping"); next; };
+            alarm $parse_timeout;
             # the URL is good so pull it
             $feed = XML::Feed->parse(URI->new($rss_url));
+            alarm 0;
         };
         
         if ( $@ ) {
@@ -640,6 +647,9 @@ get '/add_news' => sub {
                 $log->info("    Adding news") if $debug > 19;
                 $insert_news->execute($rss_id, $date, $title, $desc_string, $url, 0, 0);
                 $log->info("    News added") if $debug > 19;
+            }
+            else {
+                $log->info("    News already exists") if $debug > 19;
             }
             
         } # END foreach my $story ($feed->entries) {
