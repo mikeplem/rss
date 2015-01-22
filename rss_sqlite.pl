@@ -15,7 +15,7 @@ use utf8;
 # configuration parameters
 my $config = plugin 'Config';
 
-our $VERSION = "1.6";
+our $VERSION = "1.7";
 
 # turn off buffering
 $| = 0;
