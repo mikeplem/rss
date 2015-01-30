@@ -11,6 +11,11 @@ use DateTime;
 use DBI;
 use utf8;
 
+# non blocking - when i get around to moving in that direction
+# https://metacpan.org/pod/Mojolicious::Guides::Cookbook#Synchronizing-events
+# https://metacpan.org/pod/Mojolicious::Plugin::DefaultHelpers#delay
+# https://metacpan.org/pod/Mojo::Pg
+
 # load a config file that contains the apps
 # configuration parameters
 my $config = plugin 'Config';
@@ -366,6 +371,31 @@ if ( app->check_tables == 0 ) {
 }
 app->select_feeds;
 
+# ------------- NEWS UPDATE ROUTE -------------
+
+# EventSource for log messages
+get '/events' => sub {
+    my $self = shift;
+
+    # Increase inactivity timeout for connection a bit
+    # $self->inactivity_timeout(300);
+
+    # Change content type
+    $self->res->headers->content_type('text/event-stream');
+
+    # Subscribe to "message" event and forward "log" events to browser
+    my $cb = $self->app->log->on(message => sub {
+        my ($log, $level, @lines) = @_;
+        $self->write("event:log\ndata: [$level] @lines\n\n");
+    });
+    
+    # Unsubscribe from "message" event again once we are done
+    $self->on(finish => sub {
+       my $self = shift;
+       $self->app->log->unsubscribe(message => $cb);
+    });
+};
+
 # ------------- NEWS ROUTES -------------
 
 # this route will show the RSS feeds
@@ -509,7 +539,7 @@ get '/add_news' => sub {
     # more feeds left
     my $total_feeds = $self->count_feeds;
     $total_feeds += 10;
-    
+        
     # get the feeds to update 10 at a time
     my $get_feeds = $dbh->prepare("select feed_id, feed_name, feed_url from rss_feeds LIMIT 10 OFFSET ?");
     $get_feeds->execute($offset);
@@ -520,6 +550,11 @@ get '/add_news' => sub {
     } else {
         $offset += 10;
     }
+    
+    # update a div with $offset / $total_feeds
+    # may use a mojo eventsource or maybe a json endpoint (are these the same things?) to update a div
+    # in the html
+    $log->info("$offset of $total_feeds");
     
     $log->info("offset after update = $offset") if $debug > 9;
     
@@ -671,7 +706,7 @@ get '/add_news' => sub {
 
     # the recursive call used to keep gathering news
     # until we have gathered all the feeds we have
-    if ( $offset >= $total_feeds ) {
+    if ( $offset >= $total_feeds ) {        
         $log->info("about to redirect to /") if $debug > 9;
         $self->redirect_to('/');
     } else {
@@ -722,6 +757,14 @@ __DATA__
                 xmlhttp.open("GET", url, true);
                 xmlhttp.send();                    
             }
+            
+            var events = new EventSource('<%= url_for 'events' %>');
+
+            // Subscribe to "log" event
+            events.addEventListener('log', function(event) {
+                // document.body.innerHTML += event.data + '<br/>';
+                document.getElementById('event_update').innerHTML = event.data;
+            }, false);
         </script>
         <style>
             %= include 'rss_style'
@@ -729,6 +772,7 @@ __DATA__
     </head>
     <body>
         %= include 'header'
+        <div id='event_update'></div>
         % foreach my $row ( @$feed_rows ) {
 		% my ($row_feed_id, $row_feed_name) = @$row;
 		% $row_feed_name =~ s/\./ /g;
