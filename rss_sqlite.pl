@@ -371,31 +371,6 @@ if ( app->check_tables == 0 ) {
 }
 app->select_feeds;
 
-# ------------- NEWS UPDATE ROUTE -------------
-
-# EventSource for log messages
-get '/events' => sub {
-    my $self = shift;
-
-    # Increase inactivity timeout for connection a bit
-    # $self->inactivity_timeout(300);
-
-    # Change content type
-    $self->res->headers->content_type('text/event-stream');
-
-    # Subscribe to "message" event and forward "log" events to browser
-    my $cb = $self->app->log->on(message => sub {
-        my ($log, $level, @lines) = @_;
-        $self->write("event:log\ndata: [$level] @lines\n\n");
-    });
-    
-    # Unsubscribe from "message" event again once we are done
-    $self->on(finish => sub {
-       my $self = shift;
-       $self->app->log->unsubscribe(message => $cb);
-    });
-};
-
 # ------------- NEWS ROUTES -------------
 
 # this route will show the RSS feeds
@@ -531,6 +506,8 @@ get '/add_news' => sub {
     # only read 10 feeds at a time.  if no offset
     # is provided then start at 0
     my $offset = $self->param('offset') // 0;
+    my $junk   = $self->param('total_offset');
+    undef $junk;
     
     $log->info("offset = $offset") if $debug > 9;
     
@@ -550,12 +527,7 @@ get '/add_news' => sub {
     } else {
         $offset += 10;
     }
-    
-    # update a div with $offset / $total_feeds
-    # may use a mojo eventsource or maybe a json endpoint (are these the same things?) to update a div
-    # in the html
-    $log->info("$offset of $total_feeds");
-    
+            
     $log->info("offset after update = $offset") if $debug > 9;
     
     # prepare queries for inserting news and also finding items that may already exist in the database
@@ -710,8 +682,8 @@ get '/add_news' => sub {
         $log->info("about to redirect to /") if $debug > 9;
         $self->redirect_to('/');
     } else {
-        $log->info("redirect - /add_news?offset=$offset") if $debug > 9;
-        $self->redirect_to("/add_news?offset=$offset");
+        $log->info("redirect - /add_news?offset=$offset&total=$total_feeds") if $debug > 9;
+        $self->redirect_to("/add_news?offset=$offset&total=$total_feeds");
     }
 
 };
@@ -739,6 +711,7 @@ __DATA__
 
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                        alert(xmlhttp.responseText);
                         if ( url === "/add_news" ) {
                             document.getElementById('updateButtonTop').disabled = '';
                             document.getElementById('updateButtonBot').disabled = '';
@@ -758,13 +731,6 @@ __DATA__
                 xmlhttp.send();                    
             }
             
-            var events = new EventSource('<%= url_for 'events' %>');
-
-            // Subscribe to "log" event
-            events.addEventListener('log', function(event) {
-                // document.body.innerHTML += event.data + '<br/>';
-                document.getElementById('event_update').innerHTML = event.data;
-            }, false);
         </script>
         <style>
             %= include 'rss_style'
