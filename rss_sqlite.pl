@@ -700,6 +700,25 @@ __DATA__
         <title>News Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
         <script>
+            
+            function readQueryString() {
+                // http://stackoverflow.com/questions/7770887/passing-value-to-js-function-through-url-on-window-load
+                var queryStr = window.location.search;
+                var paramPairs = queryStr.substr(1).split('&');
+                var params = {};
+
+                for (var i = 0; i < paramPairs.length; i++) {
+                    var parts = paramPairs[i].split('=');
+                    params[parts[0]] = parts[1];
+                }
+                
+                if ( typeof(params.offset) != "undefined" && typeof(params.total) != "undefined" ) {
+                    document.getElementById('event_update').innerHTML = params.offset + ' / ' + params.total
+                } else {
+                    document.getElementById('event_update').innerHTML = '';
+                }
+            }
+            
             function goURL(url) {
                 var xmlhttp;
                 
@@ -711,7 +730,6 @@ __DATA__
 
                 xmlhttp.onreadystatechange = function() {
                     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        alert(xmlhttp.responseText);
                         if ( url === "/add_news" ) {
                             document.getElementById('updateButtonTop').disabled = '';
                             document.getElementById('updateButtonBot').disabled = '';
@@ -736,7 +754,7 @@ __DATA__
             %= include 'rss_style'
         </style>
     </head>
-    <body>
+    <body onload="readQueryString()">
         %= include 'header'
         <div id='event_update'></div>
         % foreach my $row ( @$feed_rows ) {
