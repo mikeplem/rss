@@ -506,8 +506,6 @@ get '/add_news' => sub {
     # only read 10 feeds at a time.  if no offset
     # is provided then start at 0
     my $offset = $self->param('offset') // 0;
-    my $junk   = $self->param('total_offset');
-    undef $junk;
     
     $log->info("offset = $offset") if $debug > 9;
     
@@ -558,14 +556,8 @@ get '/add_news' => sub {
         }
 
         # Check the result code of the HEAD request.  I have found that even when 
-        # a 501 is returned the RSS feed may still work.  If a 200 or 501 is not returned
-        # then insert a defaul future date bad url message.  This will allow the user to know
-        # there was a problem
-        if ( defined $tx->res->code && $tx->res->code !~ /200|501/ ) {
-            
-            # feed_id, news_date, news_title, news_desc, news_url
-            # $insert_news->execute($rss_id, '2099-01-01 00:00:00:000', 'bad url', $rss_url, '', 0, 0);
-            
+        # a 501 is returned the RSS feed may still work.
+        if ( defined $tx->res->code && $tx->res->code !~ /200|501/ ) {            
             $log->info("    skipping") if $debug;
             next;
         }
@@ -682,8 +674,8 @@ get '/add_news' => sub {
         $log->info("about to redirect to /") if $debug > 9;
         $self->redirect_to('/');
     } else {
-        $log->info("redirect - /add_news?offset=$offset&total=$total_feeds") if $debug > 9;
-        $self->redirect_to("/add_news?offset=$offset&total=$total_feeds");
+        $log->info("redirect - /add_news?offset=$offset") if $debug > 9;
+        $self->redirect_to("/add_news?offset=$offset");
     }
 
 };
@@ -700,24 +692,6 @@ __DATA__
         <title>News Feeds</title>
         <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" name="viewport"></meta>
         <script>
-            
-            function readQueryString() {
-                // http://stackoverflow.com/questions/7770887/passing-value-to-js-function-through-url-on-window-load
-                var queryStr = window.location.search;
-                var paramPairs = queryStr.substr(1).split('&');
-                var params = {};
-
-                for (var i = 0; i < paramPairs.length; i++) {
-                    var parts = paramPairs[i].split('=');
-                    params[parts[0]] = parts[1];
-                }
-                
-                if ( typeof(params.offset) != "undefined" && typeof(params.total) != "undefined" ) {
-                    document.getElementById('event_update').innerHTML = params.offset + ' / ' + params.total
-                } else {
-                    document.getElementById('event_update').innerHTML = '';
-                }
-            }
             
             function goURL(url) {
                 var xmlhttp;
@@ -754,7 +728,7 @@ __DATA__
             %= include 'rss_style'
         </style>
     </head>
-    <body onload="readQueryString()">
+    <body>
         %= include 'header'
         <div id='event_update'></div>
         % foreach my $row ( @$feed_rows ) {
@@ -1307,7 +1281,7 @@ __DATA__
     body {
         max-width: 480px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
     }
@@ -1317,7 +1291,7 @@ __DATA__
     body {
         max-width: 720px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
    }
@@ -1327,7 +1301,7 @@ __DATA__
     body {
         max-width: 1280px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
     }
@@ -1337,7 +1311,7 @@ __DATA__
     body {
         max-width: 480px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
    }
@@ -1347,7 +1321,7 @@ __DATA__
     body {
         max-width: 720px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
    }
@@ -1357,7 +1331,7 @@ __DATA__
     body {
         max-width: 1280px;
         font-size: 14px;
-        background-color: black;
+        background-color: 57533F;
         color: white;
         margin-left: 10px;
    }
@@ -1409,11 +1383,11 @@ li {
 }
 
 tr:nth-child(even) {
-    background: black
+    background: 57533F;
 }
 
 tr:nth-child(odd) {
-    background: black;
+    background: 57533F;
 }
 
 a:link { color:white }
