@@ -1281,7 +1281,7 @@ __DATA__
     body {
         max-width: 480px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
     }
@@ -1291,7 +1291,7 @@ __DATA__
     body {
         max-width: 720px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
    }
@@ -1301,7 +1301,7 @@ __DATA__
     body {
         max-width: 1280px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
     }
@@ -1311,7 +1311,7 @@ __DATA__
     body {
         max-width: 480px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
    }
@@ -1321,7 +1321,7 @@ __DATA__
     body {
         max-width: 720px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
    }
@@ -1331,7 +1331,7 @@ __DATA__
     body {
         max-width: 1280px;
         font-size: 14px;
-        background-color: 57533F;
+        background-color: #4D4A3C;
         color: white;
         margin-left: 10px;
    }
@@ -1383,11 +1383,11 @@ li {
 }
 
 tr:nth-child(even) {
-    background: 57533F;
+    background: #4D4A3C;
 }
 
 tr:nth-child(odd) {
-    background: 57533F;
+    background: #4D4A3C;
 }
 
 a:link { color:white }
